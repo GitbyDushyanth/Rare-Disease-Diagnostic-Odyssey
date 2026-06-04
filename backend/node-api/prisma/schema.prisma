@@ -1,0 +1,663 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// LUMEN Platform — Prisma Schema (SQLite)
+// Full database schema matching the LUMEN ERD
+// All timestamps UTC, all IDs UUID v4
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── CORE & IDENTITY ─────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  // role: patient | clinician | lab | researcher | admin
+  role         String   @default("patient")
+  phone        String?
+  dateOfBirth  DateTime?
+  // gender: male | female | other | prefer_not_to_say
+  gender       String?
+  country      String?
+  language     String   @default("en")
+  timezone     String   @default("UTC")
+  // status: active | inactive | suspended
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile              UserProfile?
+  patient              Patient?
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  sentMessages         CaseMessage[]       @relation("SentMessages")
+  caseParticipations   CaseParticipant[]
+  refreshTokens        RefreshToken[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model UserProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  avatarUrl       String?
+  bio             String?
+  specialty       String?
+  licenseNumber   String?
+  institution     String?
+  yearsExperience Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Organization {
+  id                 String   @id @default(uuid())
+  name               String
+  // type: hospital | lab | research_org | pharma | government
+  type               String
+  registrationNumber String?
+  // status: active | inactive | pending
+  status             String   @default("active")
+  country            String?
+  city               String?
+  website            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  patients   Patient[]
+  encounters Encounter[]
+}
+
+// ─── CLINICAL & PATIENT DATA ──────────────────────────────────────────────────
+
+model Patient {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  organizationId  String?
+  mrn             String   @unique
+  dateOfBirth     DateTime
+  // lifeStatus: alive | deceased
+  lifeStatus      String   @default("alive")
+  heightCm        Float?
+  weightKg        Float?
+  primaryLanguage String   @default("en")
+  isDeceased      Boolean  @default(false)
+  deceasedDate    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization          Organization?         @relation(fields: [organizationId], references: [id])
+  contacts              PatientContact[]
+  conditions            Condition[]
+  encounters            Encounter[]
+  symptomEntries        SymptomEntry[]
+  observations          Observation[]
+  procedures            Procedure[]
+  medications           Medication[]
+  documents             Document[]
+  imagingStudies        ImagingStudy[]
+  genomicSamples        GenomicSample[]
+  analysisJobs          AnalysisJob[]
+  diagnosticSuggestions DiagnosticSuggestion[]
+  cases                 Case[]
+  trialMatches          TrialMatch[]
+
+  @@index([mrn])
+  @@index([organizationId])
+}
+
+model PatientContact {
+  id           String   @id @default(uuid())
+  patientId    String
+  name         String
+  relationship String
+  phone        String?
+  email        String?
+  isPrimary    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Condition {
+  id           String   @id @default(uuid())
+  patientId    String
+  icdCode      String
+  name         String
+  // status: active | resolved | inactive | suspected
+  status       String   @default("active")
+  onsetDate    DateTime?
+  resolvedDate DateTime?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([icdCode])
+}
+
+model Encounter {
+  id             String   @id @default(uuid())
+  patientId      String
+  organizationId String?
+  // type: outpatient | inpatient | emergency | virtual | lab
+  type           String
+  startDate      DateTime
+  endDate        DateTime?
+  location       String?
+  reason         String?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  patient      Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([patientId])
+}
+
+// ─── SYMPTOMS & OBSERVATIONS ──────────────────────────────────────────────────
+
+model SymptomEntry {
+  id        String   @id @default(uuid())
+  patientId String
+  date      DateTime @default(now())
+  pain      Int      @default(0)
+  fatigue   Int      @default(0)
+  mobility  Int      @default(0)
+  sleep     Int      @default(0)
+  mood      Int      @default(0)
+  notes     String?
+  hpoTerms  String?  // JSON array of extracted HPO terms
+  // source: self | clinician | device | caregiver
+  source    String   @default("self")
+  createdAt DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([date])
+}
+
+model Observation {
+  id             String   @id @default(uuid())
+  patientId      String
+  encounterId    String?
+  // LOINC code or custom
+  code           String
+  name           String?
+  value          String?
+  unit           String?
+  referenceRange String?
+  // status: preliminary | final | amended | cancelled
+  status         String   @default("final")
+  performedDate  DateTime?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model Procedure {
+  id            String   @id @default(uuid())
+  patientId     String
+  encounterId   String?
+  code          String
+  name          String
+  // status: planned | in_progress | completed | cancelled
+  status        String   @default("completed")
+  performedDate DateTime?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Medication {
+  id         String   @id @default(uuid())
+  patientId  String
+  name       String
+  dosage     String?
+  frequency  String?
+  route      String?
+  startDate  DateTime?
+  endDate    DateTime?
+  // status: active | on_hold | completed | stopped
+  status     String   @default("active")
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+// ─── DOCUMENTS & FILES ────────────────────────────────────────────────────────
+
+model Document {
+  id         String   @id @default(uuid())
+  patientId  String
+  uploadedBy String
+  title      String
+  // docType: lab | imaging | clinical_note | report | discharge | genetic | other
+  docType    String
+  fileUrl    String
+  // fileType: PDF | JPG | PNG | DICOM | VCF | other
+  fileType   String
+  fileSize   Int
+  uploadedAt DateTime @default(now())
+
+  patient     Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  extractions DocumentExtraction[]
+
+  @@index([patientId])
+}
+
+model DocumentExtraction {
+  id               String   @id @default(uuid())
+  documentId       String
+  extractedText    String?
+  hpoTerms         String?  // JSON array
+  keyFindings      String?
+  summaryTimeline  String?  // JSON
+  // status: pending | processing | completed | failed
+  extractionStatus String   @default("pending")
+  extractedAt      DateTime?
+  createdAt        DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model ImagingStudy {
+  id               String   @id @default(uuid())
+  patientId        String
+  encounterId      String?
+  studyDate        DateTime?
+  // modality: MRI | CT | X-Ray | Ultrasound | PET | other
+  modality         String
+  seriesUid        String?
+  seriesNumber     Int?
+  studyDescription String?
+  dicomUrl         String?
+  createdAt        DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+// ─── GENOMICS ─────────────────────────────────────────────────────────────────
+
+model GenomicSample {
+  id             String   @id @default(uuid())
+  patientId      String
+  organizationId String?
+  // sampleType: blood | saliva | tissue | buccal | cord_blood
+  sampleType     String
+  // platform: WES | WGS | targeted_panel | SNP_array | RNA-seq
+  platform       String?
+  runDate        DateTime?
+  readCount      Int?
+  coverageDepth  Float?
+  genomeRef      String   @default("GRCh38")
+  // status: pending | received | processing | completed | failed | archived
+  status         String   @default("pending")
+  storageUrl     String?
+  receivedDate   DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  patient        Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sequencingRuns SequencingRun[]
+  variants       Variant[]
+
+  @@index([patientId])
+}
+
+model SequencingRun {
+  id         String   @id @default(uuid())
+  sampleId   String
+  runDate    DateTime?
+  platform   String?
+  readCount  Int?
+  coverageX  Float?
+  // status: queued | running | completed | failed
+  status     String   @default("queued")
+  storageUrl String?
+  vcfUrl     String?
+  createdAt  DateTime @default(now())
+
+  sample   GenomicSample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  variants Variant[]
+}
+
+model Variant {
+  id              String   @id @default(uuid())
+  sampleId        String
+  runId           String?
+  chromosome      String
+  position        Int
+  refAllele       String
+  altAllele       String
+  geneId          String?
+  geneSymbol      String?
+  transcriptId    String?
+  hgvsc           String?
+  hgvsp           String?
+  // zygosity: homozygous | heterozygous | hemizygous | compound_het
+  zygosity        String?
+  // variantType: SNV | indel | CNV | SV | repeat_expansion
+  variantType     String?
+  alleleFrequency Float?
+  readDepth       Int?
+  qualityScore    Float?
+  createdAt       DateTime @default(now())
+
+  sample          GenomicSample          @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  sequencingRun   SequencingRun?         @relation(fields: [runId], references: [id])
+  annotations     VariantAnnotation[]
+  interpretations VariantInterpretation[]
+
+  @@index([sampleId])
+  @@index([geneSymbol])
+  @@index([chromosome, position])
+}
+
+model VariantAnnotation {
+  id               String  @id @default(uuid())
+  variantId        String
+  clinvarId        String?
+  clinvarSig       String?
+  omimId           String?
+  omimDisease      String?
+  gnomadFrequency  Float?
+  gnomadPopMax     Float?
+  hgmdId           String?
+  siftScore        Float?
+  siftPred         String?
+  polyphenScore    Float?
+  polyphenPred     String?
+  caddScore        Float?
+  spliceAiScore    Float?
+  // pathogenicity: pathogenic | likely_pathogenic | vus | likely_benign | benign
+  pathogenicity    String?
+  literatureCount  Int?
+  createdAt        DateTime @default(now())
+
+  variant Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
+
+model VariantInterpretation {
+  id                  String   @id @default(uuid())
+  variantId           String
+  interpretedBy       String
+  // acmgClassification: pathogenic | likely_pathogenic | vus | likely_benign | benign
+  acmgClassification  String
+  confidenceScore     Float?
+  explanation         String?
+  interpretationNotes String?
+  // reviewStatus: pending | in_review | accepted | rejected
+  reviewStatus        String   @default("pending")
+  interpretedAt       DateTime @default(now())
+
+  variant Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
+
+// ─── AI & ANALYSIS ────────────────────────────────────────────────────────────
+
+model AnalysisJob {
+  id          String   @id @default(uuid())
+  patientId   String
+  // jobType: hpo_extraction | disease_similarity | variant_prioritization |
+  //          trial_matching | progression_prediction | record_summarization
+  jobType     String
+  // status: queued | running | completed | failed
+  status      String   @default("queued")
+  inputData   String?  // JSON
+  startedAt   DateTime?
+  completedAt DateTime?
+  errorMsg    String?
+  createdAt   DateTime @default(now())
+
+  patient Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  results AnalysisResult[]
+
+  @@index([patientId])
+  @@index([status])
+}
+
+model AnalysisResult {
+  id              String   @id @default(uuid())
+  jobId           String
+  // resultType: hpo_terms | disease_matches | variant_priorities |
+  //             trial_matches | progression_risk | document_summary
+  resultType      String
+  structuredData  String?  // JSON
+  confidenceScore Float?
+  explanation     String?
+  // status: new | reviewed | accepted | rejected
+  status          String   @default("new")
+  createdAt       DateTime @default(now())
+
+  job AnalysisJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+model DiagnosticSuggestion {
+  id              String   @id @default(uuid())
+  patientId       String
+  analysisJobId   String?
+  diseaseName     String
+  // orphanetId, omimId, etc.
+  diseaseId       String?
+  confidenceScore Float
+  rank            Int
+  hpoOverlap      String?  // JSON array
+  explanation     String?
+  // status: new | reviewed | accepted | rejected
+  status          String   @default("new")
+  createdAt       DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+// ─── COLLABORATION ────────────────────────────────────────────────────────────
+
+model Case {
+  id          String   @id @default(uuid())
+  patientId   String
+  title       String
+  description String?
+  // status: open | in_progress | pending_review | closed | archived
+  status      String   @default("open")
+  // priority: low | medium | high | urgent
+  priority    String   @default("medium")
+  // aiFlag: low | medium | high | critical
+  aiFlag      String?
+  createdBy   String
+  assignedTo  String?
+  closedAt    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patient      Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  participants CaseParticipant[]
+  messages     CaseMessage[]
+  attachments  CaseAttachment[]
+
+  @@index([patientId])
+  @@index([status])
+}
+
+model CaseParticipant {
+  id     String @id @default(uuid())
+  caseId String
+  userId String
+  // role: owner | clinician | specialist | observer | lab
+  role   String @default("observer")
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, userId])
+}
+
+model CaseMessage {
+  id        String   @id @default(uuid())
+  caseId    String
+  senderId  String
+  message   String
+  // type: text | system | ai_suggestion | file_shared
+  type      String   @default("text")
+  metadata  String?  // JSON
+  createdAt DateTime @default(now())
+
+  case   Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  sender User @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model CaseAttachment {
+  id         String   @id @default(uuid())
+  caseId     String
+  documentId String
+  addedBy    String
+  addedAt    DateTime @default(now())
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+// ─── RESEARCH & TRIALS ────────────────────────────────────────────────────────
+
+model ClinicalTrial {
+  id           String   @id @default(uuid())
+  nctId        String   @unique
+  title        String
+  // phase: Phase 1 | Phase 2 | Phase 3 | Phase 4 | N/A
+  phase        String?
+  sponsor      String?
+  // status: Recruiting | Completed | Active | Terminated | Not yet recruiting
+  status       String
+  startDate    DateTime?
+  endDate      DateTime?
+  targetEnroll Int?
+  // JSON array of condition names
+  conditions   String?
+  // JSON array of {city, country, facility}
+  locations    String?
+  description  String?
+  contactEmail String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  eligibilityCriteria TrialEligibilityCriteria[]
+  matches             TrialMatch[]
+
+  @@index([status])
+}
+
+model TrialEligibilityCriteria {
+  id              String @id @default(uuid())
+  trialId         String
+  // criteriaType: inclusion | exclusion
+  criteriaType    String
+  description     String
+  hpoTerms        String? // JSON array
+  ageMin          Int?
+  ageMax          Int?
+  otherConditions String? // JSON
+
+  trial ClinicalTrial @relation(fields: [trialId], references: [id], onDelete: Cascade)
+}
+
+model TrialMatch {
+  id          String   @id @default(uuid())
+  patientId   String
+  trialId     String
+  matchScore  Float
+  matchReason String?  // JSON array of matching criteria
+  // status: potential | eligible | not_eligible | enrolled | withdrawn
+  status      String   @default("potential")
+  matchedAt   DateTime @default(now())
+
+  patient Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  trial   ClinicalTrial @relation(fields: [trialId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+// ─── SYSTEM & AUDIT ───────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  resource   String?
+  resourceId String?
+  // JSON object with before/after state or additional context
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  // result: success | failure | warning
+  result     String   @default("success")
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  // type: alert | info | warning | success | diagnostic | trial | system
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  // JSON with action links or related entity info
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  isPublic    Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}

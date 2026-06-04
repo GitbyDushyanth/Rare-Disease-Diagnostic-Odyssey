@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+  # ── Node.js API Gateway ─────────────────────────────────────────────────────
+  node-api:
+    build:
+      context: ./node-api
+      dockerfile: Dockerfile
+    container_name: lumen-node-api
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=file:./dev.db
+      - JWT_SECRET=${JWT_SECRET:-dev_secret_change_in_production_32chars}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev_refresh_secret_change_production}
+      - AI_SERVICE_URL=http://ai-service:8000
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+      - UPLOAD_DIR=/app/uploads
+      - LOG_LEVEL=debug
+    volumes:
+      - ./node-api/uploads:/app/uploads
+      - ./node-api/logs:/app/logs
+      - ./node-api/dev.db:/app/dev.db
+    depends_on:
+      - ai-service
+    restart: unless-stopped
+    networks:
+      - lumen-network
+
+  # ── Python FastAPI AI Service ───────────────────────────────────────────────
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: lumen-ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+      - PORT=8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - LOG_LEVEL=info
+    volumes:
+      - ./node-api/uploads:/app/uploads:ro
+    restart: unless-stopped
+    networks:
+      - lumen-network
+
+networks:
+  lumen-network:
+    driver: bridge
