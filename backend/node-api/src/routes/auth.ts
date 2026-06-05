@@ -256,6 +256,7 @@ const UpdateProfileSchema = z.object({
   fullName: z.string().min(2).optional(),
   phone: z.string().optional(),
   country: z.string().optional(),
+  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).optional(),
   language: z.string().optional(),
   timezone: z.string().optional(),
   profile: z.object({

@@ -332,7 +332,7 @@ router.get('/specialists', async (req, res, next) => {
       where: {
         specialty: specialty ? { contains: specialty } : { not: null },
         user: {
-          role: 'clinician',
+          role: { in: ['clinician', 'lab'] },
           status: 'active',
         },
       },

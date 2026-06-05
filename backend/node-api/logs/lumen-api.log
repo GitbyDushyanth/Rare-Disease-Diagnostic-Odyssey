@@ -42,3 +42,30 @@
 {"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-04 14:24:02"}
 {"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-04 14:24:02"}
 {"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-04 14:24:02"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-04 14:36:19"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-04 14:36:19"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-04 14:36:19"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-04 14:36:19"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-04 14:36:19"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-04 14:48:51"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-04 14:50:01"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-04 14:50:01"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-04 14:50:01"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-04 14:50:01"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-04 14:50:01"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-05 13:15:03"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-05 13:15:03"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-05 13:15:03"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-05 13:15:03"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-05 13:15:03"}
+{"level":"error","message":"Unhandled error Expected property name or '}' in JSON at position 1 (line 1 column 2)","method":"POST","path":"/api/v1/auth/login","stack":"SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)\n    at JSON.parse (<anonymous>)\n    at parse (C:\\Users\\MAHEEDHAR\\Desktop\\Rare-Disease-Diagnostic-Odyssey\\backend\\node-api\\node_modules\\body-parser\\lib\\types\\json.js:92:19)\n    at C:\\Users\\MAHEEDHAR\\Desktop\\Rare-Disease-Diagnostic-Odyssey\\backend\\node-api\\node_modules\\body-parser\\lib\\read.js:128:18\n    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n    at invokeCallback (C:\\Users\\MAHEEDHAR\\Desktop\\Rare-Disease-Diagnostic-Odyssey\\backend\\node-api\\node_modules\\raw-body\\index.js:238:16)\n    at done (C:\\Users\\MAHEEDHAR\\Desktop\\Rare-Disease-Diagnostic-Odyssey\\backend\\node-api\\node_modules\\raw-body\\index.js:227:7)\n    at IncomingMessage.onEnd (C:\\Users\\MAHEEDHAR\\Desktop\\Rare-Disease-Diagnostic-Odyssey\\backend\\node-api\\node_modules\\raw-body\\index.js:287:7)\n    at IncomingMessage.emit (node:events:519:28)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)","timestamp":"2026-06-05 13:17:44"}
+{"level":"http","message":"::1 - - [05/Jun/2026:07:48:08 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 740 \"-\" \"node\"","timestamp":"2026-06-05 13:18:08"}
+{"level":"http","message":"::1 - - [05/Jun/2026:07:54:52 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 740 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/3.6.31 Chrome/142.0.7444.265 Electron/39.8.1 Safari/537.36\"","timestamp":"2026-06-05 13:24:52"}
+{"level":"http","message":"::1 - - [05/Jun/2026:07:54:52 +0000] \"GET /api/v1/patients/me HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/3.6.31 Chrome/142.0.7444.265 Electron/39.8.1 Safari/537.36\"","timestamp":"2026-06-05 13:24:52"}
+{"level":"http","message":"::1 - - [05/Jun/2026:07:54:52 +0000] \"GET /api/v1/symptoms/27bce86e-dee7-44f8-83a8-f34b4314503d/history?days=90 HTTP/1.1\" 200 58 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/3.6.31 Chrome/142.0.7444.265 Electron/39.8.1 Safari/537.36\"","timestamp":"2026-06-05 13:24:52"}
+{"level":"http","message":"::1 - - [05/Jun/2026:07:54:52 +0000] \"GET /api/v1/documents/patient/27bce86e-dee7-44f8-83a8-f34b4314503d HTTP/1.1\" 200 80 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/3.6.31 Chrome/142.0.7444.265 Electron/39.8.1 Safari/537.36\"","timestamp":"2026-06-05 13:24:52"}
+{"level":"http","message":"::1 - - [05/Jun/2026:07:54:52 +0000] \"GET /api/v1/patients/27bce86e-dee7-44f8-83a8-f34b4314503d HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/3.6.31 Chrome/142.0.7444.265 Electron/39.8.1 Safari/537.36\"","timestamp":"2026-06-05 13:24:52"}
+{"level":"http","message":"::1 - - [05/Jun/2026:07:54:52 +0000] \"GET /api/v1/genomics/samples/patient/27bce86e-dee7-44f8-83a8-f34b4314503d HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/3.6.31 Chrome/142.0.7444.265 Electron/39.8.1 Safari/537.36\"","timestamp":"2026-06-05 13:24:52"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-05 13:27:00"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-05 13:27:15"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-05 13:28:10"}
