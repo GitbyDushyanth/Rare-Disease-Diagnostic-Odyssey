@@ -4,13 +4,20 @@ import {
   Search, FileText, Activity, Cpu
 } from 'lucide-react';
 import type { SharedState } from '../types';
+import {
+  extractVariantsFromSamples,
+  getPatientSamples,
+  getVcfFileName,
+} from '../api/genomics';
+import { listPatients } from '../api/patients';
 
 interface LabWorkstationProps {
   state: SharedState;
   setState: React.Dispatch<React.SetStateAction<SharedState>>;
+  patientId?: string;
 }
 
-export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState }) => {
+export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState, patientId }) => {
   const [selectedCaseId, setSelectedCaseId] = useState('case-1');
   const [activeTab, setActiveTab] = useState<'variants' | 'evidence' | 'reports'>('variants');
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
@@ -21,7 +28,37 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState 
   const selectedVariant = state.genomicData.prioritizedVariants[selectedVariantIdx] || state.genomicData.prioritizedVariants[0];
 
   useEffect(() => {
-    let interval: any;
+    let cancelled = false;
+    (async () => {
+      try {
+        let targetPatientId = patientId;
+        if (!targetPatientId) {
+          const patients = await listPatients(1);
+          targetPatientId = patients[0]?.id;
+        }
+        if (!targetPatientId || cancelled) return;
+        const samples = await getPatientSamples(targetPatientId);
+        const variants = extractVariantsFromSamples(samples);
+        if (variants.length === 0 || cancelled) return;
+        setState((s) => ({
+          ...s,
+          patientId: targetPatientId,
+          genomicData: {
+            ...s.genomicData,
+            fileName: getVcfFileName(samples),
+            status: 'completed',
+            prioritizedVariants: variants,
+          },
+        }));
+      } catch {
+        // keep mock/seed variants if API unavailable
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [patientId, setState]);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
     if (state.genomicData.status === 'uploading') {
       interval = setInterval(() => {
         setUploadProgress(prev => {
@@ -38,7 +75,7 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState 
       }, 500);
     }
     return () => clearInterval(interval);
-  }, [state.genomicData.status]);
+  }, [state.genomicData.status, setState]);
 
   useEffect(() => {
     if (state.genomicData.status === 'analyzing') {
@@ -60,7 +97,7 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState 
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [state.genomicData.status]);
+  }, [state.genomicData.status, setState]);
 
   const handleStartAnalysis = () => {
     setState(s => ({
@@ -247,7 +284,7 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState 
                     ].map(tab => (
                       <button 
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
+                        onClick={() => setActiveTab(tab.id as 'variants' | 'evidence' | 'reports')}
                         className={`py-3.5 border-b-2 transition ${
                           activeTab === tab.id 
                             ? 'border-purple-500 text-purple-200 font-extrabold' 

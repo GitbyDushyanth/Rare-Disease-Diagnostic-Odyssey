@@ -1,19 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Heart, Calendar, FileText, Users, User, ArrowRight, Plus, 
   ChevronRight, Award, Compass, ShieldAlert,
   ChevronLeft, Sparkles, Download, CheckCircle2
 } from 'lucide-react';
 import type { SharedState } from '../types';
+import { logSymptom } from '../api/symptoms';
+import { uploadDocument } from '../api/documents';
+import { updateProfile } from '../api/auth';
+import { ApiError } from '../api/client';
 
 interface PatientAppProps {
   state: SharedState;
   setState: React.Dispatch<React.SetStateAction<SharedState>>;
+  onRefresh?: () => Promise<void>;
 }
 
-export const PatientApp: React.FC<PatientAppProps> = ({ state, setState }) => {
+export const PatientApp: React.FC<PatientAppProps> = ({ state, setState, onRefresh }) => {
   const [currentTab, setCurrentTab] = useState<'home' | 'journey' | 'records' | 'community' | 'profile'>('home');
   const [step, setStep] = useState<number>(state.patientProfile.isCompleted ? 3 : 1);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Local state for profile creation form
   const [formName, setFormName] = useState(state.patientProfile.name || 'Sarah Johnson');
@@ -30,96 +37,95 @@ export const PatientApp: React.FC<PatientAppProps> = ({ state, setState }) => {
   const [checkinSaved, setCheckinSaved] = useState(false);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
 
-  // Local state for custom record file upload
-  const [uploadName, setUploadName] = useState('');
-  const [uploadType, setUploadType] = useState('PDF');
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleCreateProfile = () => {
-    setState(prev => ({
-      ...prev,
-      patientProfile: {
-        name: formName,
-        age: formAge,
-        gender: formGender,
-        country: formCountry,
-        status: 'Undiagnosed',
-        isCompleted: true
-      },
-      auditLogs: [
-        {
-          id: `log-${Date.now()}`,
-          timestamp: new Date().toLocaleTimeString(),
-          action: 'Profile Created',
-          user: formName,
-          details: `Patient registered: ${formName}, ${formAge}y/o ${formGender} from ${formCountry}.`
-        },
-        ...prev.auditLogs
-      ]
-    }));
-    setStep(3); // Go to home dashboard
-  };
+  const topDiagnosis = state.diagnosticSuggestions[0];
 
-  const handleSaveCheckin = () => {
-    const newLog = {
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      pain: checkinPain,
-      fatigue: checkinFatigue,
-      mobility: checkinMobility,
-      sleep: checkinSleep,
-      mood: checkinMood
-    };
-    setState(prev => ({
-      ...prev,
-      symptomLogs: [newLog, ...prev.symptomLogs],
-      auditLogs: [
-        {
-          id: `log-${Date.now()}`,
-          timestamp: new Date().toLocaleTimeString(),
-          action: 'Symptom Check-in Saved',
-          user: state.patientProfile.name || 'Patient',
-          details: `Symptom entry: Pain ${checkinPain}/10, Fatigue ${checkinFatigue}/10, Mobility ${checkinMobility}/10.`
-        },
-        ...prev.auditLogs
-      ]
-    }));
-    setCheckinSaved(true);
-    setTimeout(() => {
-      setCheckinSaved(false);
-      setIsCheckingIn(false);
-      setCurrentTab('journey'); // Navigate to timeline to see history
-    }, 1200);
-  };
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (state.patientProfile.isCompleted) setStep(3);
+  }, [state.patientProfile.isCompleted]);
 
-  const handleFileUpload = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadName.trim()) return;
-    setIsUploading(true);
-    setTimeout(() => {
-      const newFile = {
-        id: `file-${Date.now()}`,
-        name: uploadName.endsWith('.pdf') || uploadName.endsWith('.png') || uploadName.endsWith('.jpg') ? uploadName : `${uploadName}.pdf`,
-        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-        type: uploadType,
-        size: `${(Math.random() * 5 + 1).toFixed(1)} MB`
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (state.patientProfile.name) setFormName(state.patientProfile.name);
+    if (state.patientProfile.age) setFormAge(state.patientProfile.age);
+    if (state.patientProfile.gender) setFormGender(state.patientProfile.gender);
+    if (state.patientProfile.country) setFormCountry(state.patientProfile.country);
+  }, [state.patientProfile]);
+
+  const handleCreateProfile = async () => {
+    setActionError(null);
+    try {
+      const genderMap: Record<string, string> = {
+        Female: 'female',
+        Male: 'male',
+        Other: 'other',
       };
-      setState(prev => ({
+      await updateProfile({
+        fullName: formName,
+        country: formCountry,
+        gender: genderMap[formGender] || 'prefer_not_to_say',
+      });
+      setState((prev) => ({
         ...prev,
-        uploadedFiles: [newFile, ...prev.uploadedFiles],
-        auditLogs: [
-          {
-            id: `log-${Date.now()}`,
-            timestamp: new Date().toLocaleTimeString(),
-            action: 'Document Uploaded',
-            user: state.patientProfile.name || 'Patient',
-            details: `Document added to Medical Vault: ${newFile.name} (${newFile.size}).`
-          },
-          ...prev.auditLogs
-        ]
+        patientProfile: {
+          name: formName,
+          age: formAge,
+          gender: formGender,
+          country: formCountry,
+          status: 'Undiagnosed',
+          isCompleted: true,
+        },
       }));
-      setUploadName('');
+      await onRefresh?.();
+      setStep(3);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Failed to save profile');
+    }
+  };
+
+  const handleSaveCheckin = async () => {
+    if (!state.patientId) {
+      setActionError('Patient record not loaded yet');
+      return;
+    }
+    setActionError(null);
+    try {
+      await logSymptom({
+        patientId: state.patientId,
+        pain: checkinPain,
+        fatigue: checkinFatigue,
+        mobility: checkinMobility,
+        sleep: checkinSleep,
+        mood: checkinMood,
+      });
+      await onRefresh?.();
+      setCheckinSaved(true);
+      setTimeout(() => {
+        setCheckinSaved(false);
+        setIsCheckingIn(false);
+        setCurrentTab('journey');
+      }, 1200);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Failed to save check-in');
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !state.patientId) return;
+    setIsUploading(true);
+    setActionError(null);
+    try {
+      await uploadDocument(state.patientId, file, file.name);
+      await onRefresh?.();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Upload failed');
+    } finally {
       setIsUploading(false);
-    }, 1000);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -272,6 +278,12 @@ export const PatientApp: React.FC<PatientAppProps> = ({ state, setState }) => {
               </div>
             </div>
 
+            {actionError && (
+              <div className="mx-4 mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-[10px] font-medium">
+                {actionError}
+              </div>
+            )}
+
             {/* Screen Viewer Area */}
             <div className="flex-1 overflow-y-auto bg-slate-50 p-4 pb-20">
 
@@ -295,13 +307,17 @@ export const PatientApp: React.FC<PatientAppProps> = ({ state, setState }) => {
                           Potential Diagnosis
                         </span>
                         <h4 className="font-display font-bold text-lg mt-1.5 leading-tight">
-                          Duchenne Muscular Dystrophy
+                          {topDiagnosis?.diseaseName || 'Analysis in progress'}
                         </h4>
                       </div>
                       
                       {/* Percent match */}
                       <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-xl p-2 border border-white/20">
-                        <span className="text-xl font-display font-extrabold text-blue-100">89%</span>
+                        <span className="text-xl font-display font-extrabold text-blue-100">
+                          {topDiagnosis
+                            ? `${Math.round(topDiagnosis.confidenceScore * 100)}%`
+                            : '—'}
+                        </span>
                         <span className="text-[8px] text-blue-200 uppercase tracking-wider font-semibold">Confidence</span>
                       </div>
                     </div>
@@ -579,35 +595,31 @@ export const PatientApp: React.FC<PatientAppProps> = ({ state, setState }) => {
                   </div>
 
                   {/* Upload Form */}
-                  <form onSubmit={handleFileUpload} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
                     <h4 className="font-bold text-slate-800 text-xs">Add New Record</h4>
-                    <div className="flex space-x-2">
-                      <input 
-                        type="text"
-                        placeholder="Milli Report, Lab Results..."
-                        value={uploadName}
-                        onChange={(e) => setUploadName(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-500"
-                      />
-                      <select 
-                        value={uploadType} 
-                        onChange={(e) => setUploadType(e.target.value)}
-                        className="px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none"
-                      >
-                        <option>PDF</option>
-                        <option>JPG</option>
-                        <option>PNG</option>
-                        <option>DICOM</option>
-                      </select>
-                      <button 
-                        type="submit" 
-                        disabled={isUploading || !uploadName}
-                        className="p-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 disabled:bg-slate-350 transition flex items-center justify-center"
-                      >
-                        {isUploading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Plus className="w-4.5 h-4.5" />}
-                      </button>
-                    </div>
-                  </form>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.dcm"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading || !state.patientId}
+                      className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:border-brand-400 hover:text-brand-600 transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                    >
+                      {isUploading ? (
+                        <span className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          <span>Upload PDF, image, or DICOM</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
                   {/* List of Files */}
                   <div className="space-y-2">
