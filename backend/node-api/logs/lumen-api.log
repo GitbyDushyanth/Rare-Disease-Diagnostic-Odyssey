@@ -1,0 +1,44 @@
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-04 13:48:45"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-04 13:48:45"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-04 13:48:45"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-04 13:48:45"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-04 13:48:45"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:21:08 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 705 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:51:08"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:21:51 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 705 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:51:51"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:21:52 +0000] \"GET /api/v1/admin/dashboard HTTP/1.1\" 200 1173 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:51:52"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:03 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 734 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:03"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:03 +0000] \"GET /api/v1/clinician/dashboard HTTP/1.1\" 200 2574 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:03"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:03 +0000] \"GET /api/v1/patients HTTP/1.1\" 200 1189 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:03"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:03 +0000] \"GET /api/v1/symptoms/27bce86e-dee7-44f8-83a8-f34b4314503d/history HTTP/1.1\" 200 58 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:03"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:27 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 705 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:27"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:27 +0000] \"GET /api/v1/patients HTTP/1.1\" 200 1189 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:27"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:27 +0000] \"GET /api/v1/genomics/samples/patient/27bce86e-dee7-44f8-83a8-f34b4314503d HTTP/1.1\" 200 5594 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:27"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:27 +0000] \"GET /api/v1/trials HTTP/1.1\" 200 1685 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:27"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:27 +0000] \"GET /api/v1/notifications HTTP/1.1\" 200 96 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:27"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:27 +0000] \"GET /api/v1/fhir/metadata HTTP/1.1\" 200 569 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:27"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:53 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 705 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:53"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:53 +0000] \"GET /api/v1/patients HTTP/1.1\" 200 1189 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:53"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:53 +0000] \"GET /api/v1/fhir/Patient/27bce86e-dee7-44f8-83a8-f34b4314503d HTTP/1.1\" 200 625 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:53"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:53 +0000] \"GET /api/v1/research/dashboard HTTP/1.1\" 200 107 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:53"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:53 +0000] \"GET /api/v1/research/analytics/diagnostic-yield HTTP/1.1\" 200 133 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:53"}
+{"level":"http","message":"::1 - - [04/Jun/2026:08:22:53 +0000] \"GET /api/v1/admin/reports/compliance HTTP/1.1\" 200 381 \"-\" \"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.8457\"","timestamp":"2026-06-04 13:52:53"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-04 14:17:19"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-04 14:17:19"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-04 14:17:19"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-04 14:17:19"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-04 14:17:19"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-04 14:22:10"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-04 14:22:10"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-04 14:22:10"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-04 14:22:10"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-04 14:22:10"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-04 14:22:21"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-04 14:22:21"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-04 14:22:21"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-04 14:22:21"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-04 14:22:21"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-04 14:24:02"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-04 14:24:02"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-04 14:24:02"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-04 14:24:02"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-04 14:24:02"}
