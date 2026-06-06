@@ -7,7 +7,7 @@ LUMEN is a full-stack healthcare platform designed to support rare disease diagn
 - Frontend: React + Vite + TypeScript
 - API Gateway: Node.js + Express + Prisma
 - AI Service: FastAPI (Python)
-- Database: SQLite (development)
+- Database: PostgreSQL (Supabase)
 
 ---
 
@@ -215,7 +215,7 @@ uvicorn main:app --reload
 1. Frontend package name is still `hachazards` and should be renamed to a project-specific name.
 2. Login depends on seeded demo users; authentication will fail if `npm run db:seed` is skipped.
 3. Environment variables must be copied from `.env.example` files before first run.
-4. SQLite is suitable for development only; production should use PostgreSQL or another managed database.
+4. Configure `DATABASE_URL` and `DIRECT_URL` in `backend/node-api/.env` before running Prisma or the API.
 5. API, AI service, and frontend must all be running simultaneously for full functionality.
 6. Verify frontend API endpoint configuration (`VITE_API_URL`) when deploying outside local development.
 
