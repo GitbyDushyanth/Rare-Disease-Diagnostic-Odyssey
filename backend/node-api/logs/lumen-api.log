@@ -69,3 +69,9 @@
 {"level":"info","message":"Database connected successfully","timestamp":"2026-06-05 13:27:00"}
 {"level":"info","message":"Database connected successfully","timestamp":"2026-06-05 13:27:15"}
 {"level":"info","message":"Database connected successfully","timestamp":"2026-06-05 13:28:10"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-06 13:50:35"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-06 13:50:35"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-06 13:50:35"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-06 13:50:35"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-06 13:50:35"}
+{"level":"info","message":"SIGINT received. Shutting down gracefully...","timestamp":"2026-06-06 13:52:52"}

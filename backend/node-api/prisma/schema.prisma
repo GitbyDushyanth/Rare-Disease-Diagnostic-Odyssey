@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// LUMEN Platform — Prisma Schema (SQLite)
+// LUMEN Platform — Prisma Schema (PostgreSQL)
 // Full database schema matching the LUMEN ERD
 // All timestamps UTC, all IDs UUID v4
 // ─────────────────────────────────────────────────────────────────────────────
@@ -9,8 +9,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── CORE & IDENTITY ─────────────────────────────────────────────────────────
