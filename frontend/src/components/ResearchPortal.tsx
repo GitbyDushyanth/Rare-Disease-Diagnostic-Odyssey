@@ -1,45 +1,60 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
-  Globe, Database, Key, Search, Compass, ArrowDownToLine, Filter, UserCheck, CheckCircle2
+  Globe, Database, Key, Search, Compass, ArrowDownToLine, Filter, UserCheck, CheckCircle2, Loader2
 } from 'lucide-react';
 import type { SharedState } from '../types';
+import { getResearchDashboard, searchCohort } from '../api/research';
+import { ApiError } from '../api/client';
 
 interface ResearchPortalProps {
   state: SharedState;
   setState: React.Dispatch<React.SetStateAction<SharedState>>;
 }
 
-export const ResearchPortal: React.FC<ResearchPortalProps> = ({ state: _state, setState }) => {
+export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'cohort' | 'api'>('overview');
-  const [geneQuery, setGeneQuery] = useState('KCNQ2');
-  const [symptomQuery, setSymptomQuery] = useState('Epilepsy');
+  const [geneQuery, setGeneQuery] = useState('DMD');
+  const [symptomQuery, setSymptomQuery] = useState('Muscular Dystrophy');
   const [ageMin, setAgeMin] = useState(2);
-  const [ageMax, setAgeMax] = useState(12);
+  const [ageMax, setAgeMax] = useState(18);
+  const [dashboard, setDashboard] = useState<{
+    totalPatients: number;
+    totalGenomes: number;
+    countries: number;
+    totalTrials: number;
+  } | null>(null);
+  const [cohortTotal, setCohortTotal] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   
   const [isSearching, setIsSearching] = useState(false);
   const [searchRun, setSearchRun] = useState(false);
   const [exportComplete, setExportComplete] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const handleSearchCohort = () => {
+  useEffect(() => {
+    getResearchDashboard()
+      .then(setDashboard)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSearchCohort = async () => {
     setIsSearching(true);
-    setTimeout(() => {
-      setIsSearching(false);
+    setActionError(null);
+    try {
+      const result = await searchCohort({
+        genes: geneQuery ? [geneQuery] : undefined,
+        conditions: symptomQuery ? [symptomQuery] : undefined,
+        ageMin,
+        ageMax,
+      });
+      setCohortTotal(result.total);
       setSearchRun(true);
-      
-      setState(prev => ({
-        ...prev,
-        auditLogs: [
-          {
-            id: `log-${Date.now()}`,
-            timestamp: new Date().toLocaleTimeString(),
-            action: 'Cohort Query Executed',
-            user: 'Researcher Portal',
-            details: `Federated query run: Gene=${geneQuery}, Symptom=${symptomQuery}, AgeRange=${ageMin}-${ageMax}. 247 results.`
-          },
-          ...prev.auditLogs
-        ]
-      }));
-    }, 1200);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Cohort search failed');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleExport = () => {
@@ -65,7 +80,7 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = ({ state: _state, s
             ].map(item => (
               <button 
                 key={item.id}
-                onClick={() => setActiveTab(item.id as any)}
+                onClick={() => setActiveTab(item.id as 'overview' | 'cohort' | 'api')}
                 className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === item.id 
                     ? 'bg-indigo-50 text-indigo-700 shadow-xs border border-indigo-100' 
@@ -104,16 +119,29 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = ({ state: _state, s
           </div>
         </div>
 
+        {loading && (
+          <div className="flex items-center justify-center py-20 text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" />
+            Loading research data...
+          </div>
+        )}
+
+        {actionError && (
+          <div className="mt-4 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
+            {actionError}
+          </div>
+        )}
+
         {/* Dynamic Screens */}
-        {activeTab === 'overview' && (
+        {!loading && activeTab === 'overview' && (
           <div className="space-y-6 mt-5 animate-fade-in flex-1">
             
             {/* Cohort Stats banner cards */}
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: 'Total Ingested Genomes', val: '3.4M+', desc: 'Across 12 medical networks', color: 'border-indigo-100 bg-indigo-50/30' },
-                { label: 'Structured Phenotypes', val: '12,000+', desc: 'HPO ontology terms mapped', color: 'border-emerald-100 bg-emerald-50/30' },
-                { label: 'Active Countries', val: '42 Countries', desc: 'Federated global coverage', color: 'border-blue-100 bg-blue-50/30' }
+                { label: 'Total Ingested Genomes', val: String(dashboard?.totalGenomes ?? '—'), desc: 'Completed sequencing runs', color: 'border-indigo-100 bg-indigo-50/30' },
+                { label: 'Registered Patients', val: String(dashboard?.totalPatients ?? '—'), desc: 'Platform patient records', color: 'border-emerald-100 bg-emerald-50/30' },
+                { label: 'Active Countries', val: `${dashboard?.countries ?? '—'} Countries`, desc: 'Federated global coverage', color: 'border-blue-100 bg-blue-50/30' }
               ].map((stat, idx) => (
                 <div key={idx} className={`p-4 border rounded-xl shadow-xs ${stat.color}`}>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">{stat.label}</p>
@@ -294,7 +322,7 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = ({ state: _state, s
                       <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                         <div>
                           <h4 className="font-display font-bold text-slate-800 text-base">Cohort Summary</h4>
-                          <p className="text-xs text-slate-400">Total matched: <span className="font-bold text-indigo-600">247 de-identified patient files</span></p>
+                          <p className="text-xs text-slate-400">Total matched: <span className="font-bold text-indigo-600">{cohortTotal ?? 0} de-identified patient files</span></p>
                         </div>
                         <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold border border-emerald-100">
                           Highly Correlated Cluster Found

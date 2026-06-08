@@ -52,7 +52,7 @@ const AddConditionSchema = z.object({
 // ── GET /api/v1/patients — list (clinician/admin only) ────────────────────────
 router.get(
   '/',
-  requireRole(['clinician', 'admin', 'researcher']),
+  requireRole(['clinician', 'admin', 'researcher', 'lab']),
   async (req: AuthenticatedRequest, res, next) => {
     try {
       const page = parseInt(req.query.page as string) || 1;

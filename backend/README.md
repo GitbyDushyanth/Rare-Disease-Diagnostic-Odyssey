@@ -32,7 +32,7 @@ npm install
 # Copy and fill env
 copy .env.example .env
 
-# Push schema to SQLite (creates dev.db)
+# Push schema to PostgreSQL (Supabase)
 npx prisma db push
 
 # Seed demo data (all 5 user roles + patient records)
@@ -240,7 +240,7 @@ docker-compose up --build
 
 ---
 
-## Database Schema (SQLite via Prisma)
+## Database Schema (PostgreSQL via Prisma)
 
 30 tables across 6 domains:
 
@@ -271,7 +271,8 @@ docker-compose up --build
 
 ### Node API (`.env`)
 ```
-DATABASE_URL=file:./dev.db
+DATABASE_URL=postgresql://...pooler...:6543/postgres?pgbouncer=true
+DIRECT_URL=postgresql://...pooler...:5432/postgres
 JWT_SECRET=<min 32 chars>
 JWT_REFRESH_SECRET=<min 32 chars>
 AI_SERVICE_URL=http://localhost:8000

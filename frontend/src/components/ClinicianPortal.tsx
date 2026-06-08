@@ -1,95 +1,154 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Activity, Users, AlertTriangle, Clock, Search, Folder, CheckSquare, 
   Send, AlertCircle, FileText, ChevronRight, UserPlus, Sparkles,
-  Clipboard, Calendar, ArrowUpRight, GraduationCap, MapPin
+  Clipboard, Calendar, ArrowUpRight, GraduationCap, MapPin, Loader2
 } from 'lucide-react';
 import type { SharedState } from '../types';
+import {
+  createCarePlan,
+  getCases,
+  getClinicianDashboard,
+  getSpecialists,
+  referCase,
+  type CaseRecord,
+} from '../api/clinician';
+import { calcAge, formatGender, timeAgo } from '../utils/format';
+import { ApiError } from '../api/client';
 
 interface ClinicianPortalProps {
   state: SharedState;
   setState: React.Dispatch<React.SetStateAction<SharedState>>;
+  onCaseSelect?: (patient: CaseRecord['patient']) => void;
 }
 
-export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setState }) => {
-  const [selectedCaseId, setSelectedCaseId] = useState<string>('case-1');
+interface QueuePatient {
+  id: string;
+  patientId: string;
+  name: string;
+  age: string;
+  gender: string;
+  code: string;
+  symptoms: string;
+  flag: string;
+  flagColor: string;
+  confidence: string;
+  time: string;
+  raw: CaseRecord;
+}
+
+function flagStyle(aiFlag?: string): { flag: string; flagColor: string } {
+  const level = (aiFlag || 'medium').toLowerCase();
+  if (level === 'high' || level === 'urgent') {
+    return { flag: 'AI Flag: High', flagColor: 'bg-red-500/20 text-red-400 border border-red-500/30' };
+  }
+  if (level === 'low') {
+    return { flag: 'AI Flag: Low', flagColor: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' };
+  }
+  return { flag: 'AI Flag: Medium', flagColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30' };
+}
+
+export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setState, onCaseSelect }) => {
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'timeline' | 'records' | 'labs' | 'notes'>('timeline');
   const [clinicianSearch, setClinicianSearch] = useState('');
-  
-  // Custom mock patients queue list
-  const patientsList = [
-    {
-      id: 'case-1',
-      name: state.patientProfile.name || 'Sarah Johnson',
-      age: `${state.patientProfile.age}y`,
-      gender: state.patientProfile.gender,
-      code: 'CASE-2024-1456',
-      symptoms: 'Progressive muscle weakness, Gowers sign, delayed motor milestones',
-      flag: 'AI Flag: High',
-      flagColor: 'bg-red-500/20 text-red-400 border border-red-500/30',
-      confidence: '89%',
-      time: '2h ago'
-    },
-    {
-      id: 'case-2',
-      name: 'Michael Lee',
-      age: '8y',
-      gender: 'Male',
-      code: 'CASE-2024-1457',
-      symptoms: 'Seizures, developmental delay, microcephaly, hypotonia',
-      flag: 'AI Flag: Medium',
-      flagColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-      confidence: '67%',
-      time: '5h ago'
-    },
-    {
-      id: 'case-3',
-      name: 'Emma Davis',
-      age: '5y',
-      gender: 'Female',
-      code: 'CASE-2024-1458',
-      symptoms: 'Short stature, vision problems, hearing loss, skeletal dysplasia',
-      flag: 'AI Flag: Low',
-      flagColor: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-      confidence: '34%',
-      time: '1d ago'
-    }
-  ];
+  const [cases, setCases] = useState<CaseRecord[]>([]);
+  const [dashboard, setDashboard] = useState<{
+    activeCases: number;
+    urgentCases: number;
+    pendingInterpretations: number;
+    avgResolutionDays: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const currentPatient = patientsList.find(p => p.id === selectedCaseId) || patientsList[0];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [dash, caseList] = await Promise.all([getClinicianDashboard(), getCases()]);
+        if (cancelled) return;
+        setDashboard(dash.stats);
+        setCases(caseList);
+        if (caseList.length > 0) {
+          setSelectedCaseId(caseList[0].id);
+          onCaseSelect?.(caseList[0].patient);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setActionError(err instanceof ApiError ? err.message : 'Failed to load clinician data');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [onCaseSelect]);
 
-  const handleCreateCarePlan = () => {
-    setState(prev => ({
-      ...prev,
-      carePlanCreated: true,
-      auditLogs: [
-        {
-          id: `log-${Date.now()}`,
-          timestamp: new Date().toLocaleTimeString(),
-          action: 'Care Plan Created',
-          user: 'Dr. Arjun Patel',
-          details: `Custom care plan generated for patient ${currentPatient.name} (${currentPatient.code}).`
-        },
-        ...prev.auditLogs
-      ]
-    }));
+  const patientsList: QueuePatient[] = cases.map((c) => {
+    const topDx = c.patient.diagnosticSuggestions?.[0];
+    const { flag, flagColor } = flagStyle(c.aiFlag);
+    return {
+      id: c.id,
+      patientId: c.patientId,
+      name: c.patient.user.fullName,
+      age: `${calcAge(c.patient.dateOfBirth)}y`,
+      gender: formatGender(c.patient.user.gender),
+      code: c.title,
+      symptoms: c.description || 'No description',
+      flag,
+      flagColor,
+      confidence: topDx ? `${Math.round(topDx.confidenceScore * 100)}%` : '—',
+      time: timeAgo(c.createdAt),
+      raw: c,
+    };
+  });
+
+  const currentPatient = patientsList.find((p) => p.id === selectedCaseId) || patientsList[0] || null;
+
+  const handleSelectCase = (patient: QueuePatient) => {
+    setSelectedCaseId(patient.id);
+    onCaseSelect?.(patient.raw.patient);
   };
 
-  const handleSendSpecialistCase = () => {
-    setState(prev => ({
-      ...prev,
-      specialistReferred: true,
-      auditLogs: [
-        {
-          id: `log-${Date.now()}`,
-          timestamp: new Date().toLocaleTimeString(),
-          action: 'Specialist Referral Dispatched',
-          user: 'Dr. Arjun Patel',
-          details: `Case details and HPO profile of ${currentPatient.name} referred to Dr. Meera Nair (SLA 48h).`
-        },
-        ...prev.auditLogs
-      ]
-    }));
+  const handleCreateCarePlan = async () => {
+    if (!currentPatient) return;
+    setActionError(null);
+    try {
+      const diagnosis =
+        currentPatient.raw.patient.diagnosticSuggestions?.[0]?.diseaseName ||
+        'Rare disease workup';
+      await createCarePlan({
+        patientId: currentPatient.patientId,
+        caseId: currentPatient.id,
+        primaryDiagnosis: diagnosis,
+        recommendedTests: ['Whole Exome Sequencing', 'Genetic Counseling', 'CK Level'],
+      });
+      setState((prev) => ({ ...prev, carePlanCreated: true }));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Failed to create care plan');
+    }
+  };
+
+  const handleSendSpecialistCase = async () => {
+    if (!currentPatient) return;
+    setActionError(null);
+    try {
+      const specialists = await getSpecialists('Genomics');
+      const specialist = specialists[0];
+      if (!specialist) {
+        setActionError('No specialists available for referral');
+        return;
+      }
+      await referCase(currentPatient.id, {
+        specialistId: specialist.user.id,
+        reason: `Referral for ${currentPatient.name}: genomic review and variant interpretation needed.`,
+        urgency: 'urgent',
+      });
+      setState((prev) => ({ ...prev, specialistReferred: true }));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Failed to send referral');
+    }
   };
 
   // Filter patients by search query
@@ -186,13 +245,26 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
           </div>
         </div>
 
+        {actionError && (
+          <div className="mt-4 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-xs">
+            {actionError}
+          </div>
+        )}
+
+        {loading && (
+          <div className="flex items-center justify-center py-20 text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" />
+            Loading cases...
+          </div>
+        )}
+
         {/* Stats banner row */}
-        <div className="grid grid-cols-4 gap-4 mt-5 flex-shrink-0">
+        {!loading && <div className="grid grid-cols-4 gap-4 mt-5 flex-shrink-0">
           {[
-            { label: 'Active Cases', val: '142', change: '+12 this week', icon: Users, color: 'text-brand-400 bg-brand-500/10' },
-            { label: 'Urgent Cases', val: '8', change: 'Requires attention', icon: AlertTriangle, color: 'text-red-400 bg-red-500/10' },
-            { label: 'Avg. Resolution Time', val: '12 Days', change: '-3 days vs last month', icon: Clock, color: 'text-emerald-400 bg-emerald-500/10' },
-            { label: 'Rare Disease Alerts', val: '32', change: '+8 this week', icon: Activity, color: 'text-indigo-400 bg-indigo-500/10' },
+            { label: 'Active Cases', val: String(dashboard?.activeCases ?? '—'), change: 'Live from API', icon: Users, color: 'text-brand-400 bg-brand-500/10' },
+            { label: 'Urgent Cases', val: String(dashboard?.urgentCases ?? '—'), change: 'Requires attention', icon: AlertTriangle, color: 'text-red-400 bg-red-500/10' },
+            { label: 'Avg. Resolution Time', val: `${dashboard?.avgResolutionDays ?? 12} Days`, change: 'Platform metric', icon: Clock, color: 'text-emerald-400 bg-emerald-500/10' },
+            { label: 'Pending Interpretations', val: String(dashboard?.pendingInterpretations ?? '—'), change: 'Lab queue', icon: Activity, color: 'text-indigo-400 bg-indigo-500/10' },
           ].map((stat, idx) => (
             <div key={idx} className="bg-clinician-card p-4 rounded-xl border border-slate-800/80 shadow-sm flex items-center justify-between">
               <div className="space-y-1">
@@ -205,10 +277,10 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
               </div>
             </div>
           ))}
-        </div>
+        </div>}
 
         {/* Dynamic Patient Selector and Diagnostic Layout */}
-        <div className="grid grid-cols-12 gap-5 mt-5 flex-1 min-h-0">
+        {!loading && <div className="grid grid-cols-12 gap-5 mt-5 flex-1 min-h-0">
           
           {/* Left Col: Cases list queue (Span 4) */}
           <div className="col-span-4 bg-clinician-card rounded-xl border border-slate-800/80 p-4 flex flex-col">
@@ -221,7 +293,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
               {filteredPatients.map(patient => (
                 <div 
                   key={patient.id}
-                  onClick={() => setSelectedCaseId(patient.id)}
+                  onClick={() => handleSelectCase(patient)}
                   className={`p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between h-28 ${
                     selectedCaseId === patient.id 
                       ? 'bg-slate-900 border-brand-500 shadow-md' 
@@ -261,7 +333,12 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
 
           {/* Right Col: Diagnosis Workbench (Span 8) */}
           <div className="col-span-8 flex flex-col space-y-5 overflow-y-auto">
-            
+            {!currentPatient && (
+              <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+                No cases in queue. Seed the database to load demo cases.
+              </div>
+            )}
+            {currentPatient && <>
             {/* Patient Header Review Card */}
             <div className="bg-clinician-card rounded-xl border border-slate-800/80 p-5 shadow-xs flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -303,7 +380,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                   ].map(tab => (
                     <button 
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
+                      onClick={() => setActiveTab(tab.id as 'timeline' | 'records' | 'labs' | 'notes')}
                       className={`py-3.5 border-b-2 transition focus:outline-none ${
                         activeTab === tab.id 
                           ? 'border-brand-500 text-white font-extrabold' 
@@ -430,22 +507,31 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                 </div>
                 
                 <div className="space-y-3">
-                  {[
-                    { name: 'Duchenne Muscular Dystrophy', match: '89%', color: 'bg-brand-500' },
-                    { name: 'Becker Muscular Dystrophy', match: '71%', color: 'bg-indigo-500' },
-                    { name: 'Limb-Girdle Muscular Dystrophy (LGMD)', match: '44%', color: 'bg-purple-500' },
-                    { name: 'Congenital Myopathy', match: '28%', color: 'bg-slate-600' }
-                  ].map((disease, idx) => (
-                    <div key={idx} className="space-y-1.5">
-                      <div className="flex justify-between text-xs font-semibold text-slate-350">
-                        <span>{disease.name}</span>
-                        <span>{disease.match} Match</span>
+                  {(currentPatient?.raw.patient.diagnosticSuggestions?.length
+                    ? currentPatient.raw.patient.diagnosticSuggestions
+                    : state.diagnosticSuggestions
+                  ).map((disease, idx) => {
+                    const pct = Math.round(disease.confidenceScore * 100);
+                    const colors = ['bg-brand-500', 'bg-indigo-500', 'bg-purple-500', 'bg-slate-600'];
+                    return (
+                      <div key={idx} className="space-y-1.5">
+                        <div className="flex justify-between text-xs font-semibold text-slate-350">
+                          <span>{disease.diseaseName}</span>
+                          <span>{pct}% Match</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${colors[idx] || 'bg-slate-600'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${disease.color}`} style={{ width: disease.match }} />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                  {!currentPatient?.raw.patient.diagnosticSuggestions?.length &&
+                    !state.diagnosticSuggestions.length && (
+                      <p className="text-xs text-slate-500">No AI suggestions yet for this case.</p>
+                    )}
                 </div>
               </div>
 
@@ -510,10 +596,11 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                 <span>{state.specialistReferred ? 'Case Dispatched to Dr. Nair' : 'Send Case details'}</span>
               </button>
             </div>
+            </>}
 
           </div>
 
-        </div>
+        </div>}
 
       </main>
     </div>

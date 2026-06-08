@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   ShieldCheck, Server, ClipboardList, Database, HardDrive, 
-  Search, CheckCircle2, Activity, AlertTriangle
+  Search, CheckCircle2, Activity, AlertTriangle, Loader2
 } from 'lucide-react';
 import type { SharedState } from '../types';
+import { getAdminDashboard, getComplianceReport } from '../api/admin';
+import { ApiError } from '../api/client';
 
 interface AdminPortalProps {
   state: SharedState;
@@ -13,32 +15,52 @@ interface AdminPortalProps {
 export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'audit' | 'quality'>('overview');
   const [auditSearch, setAuditSearch] = useState('');
+  const [stats, setStats] = useState<{
+    totalPatients: number;
+    totalClinicians: number;
+    totalHospitals: number;
+    uptime: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
   
   const [auditProgress, setAuditProgress] = useState(false);
   const [auditComplete, setAuditComplete] = useState(false);
 
-  const handleGenerateAuditReport = () => {
+  useEffect(() => {
+    getAdminDashboard()
+      .then((data) => {
+        setStats({
+          totalPatients: data.stats.totalPatients,
+          totalClinicians: data.stats.totalClinicians,
+          totalHospitals: data.stats.totalHospitals,
+          uptime: data.stats.platformHealth.uptime,
+        });
+        setState((prev) => ({
+          ...prev,
+          auditLogs: data.recentAuditLogs.map((log) => ({
+            id: log.id,
+            timestamp: new Date(log.createdAt).toLocaleTimeString(),
+            action: log.action,
+            user: log.user?.fullName || 'System',
+            details: log.details || log.resource || '',
+          })),
+        }));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [setState]);
+
+  const handleGenerateAuditReport = async () => {
     setAuditProgress(true);
-    setTimeout(() => {
-      setAuditProgress(false);
+    try {
+      await getComplianceReport();
       setAuditComplete(true);
-      
-      setState(prev => ({
-        ...prev,
-        auditLogs: [
-          {
-            id: `log-${Date.now()}`,
-            timestamp: new Date().toLocaleTimeString(),
-            action: 'Compliance Audit Compiled',
-            user: 'System Admin',
-            details: 'Regulatory SOC2 and HIPAA audit logs generated for active session.'
-          },
-          ...prev.auditLogs
-        ]
-      }));
-      
       setTimeout(() => setAuditComplete(false), 2000);
-    }, 1200);
+    } catch (err) {
+      console.error(err instanceof ApiError ? err.message : 'Report failed');
+    } finally {
+      setAuditProgress(false);
+    }
   };
 
   const filteredLogs = state.auditLogs.filter(log => 
@@ -65,7 +87,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
             ].map(item => (
               <button 
                 key={item.id}
-                onClick={() => setActiveTab(item.id as any)}
+                onClick={() => setActiveTab(item.id as 'overview' | 'audit' | 'quality')}
                 className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === item.id 
                     ? 'bg-pink-50 text-pink-700 shadow-xs border border-pink-100' 
@@ -104,17 +126,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
           </div>
         </div>
 
+        {loading && (
+          <div className="flex items-center justify-center py-20 text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" />
+            Loading platform data...
+          </div>
+        )}
+
         {/* Dynamic Panels */}
-        {activeTab === 'overview' && (
+        {!loading && activeTab === 'overview' && (
           <div className="space-y-6 mt-5 animate-fade-in flex-1">
             
             {/* Top metrics dashboard */}
             <div className="grid grid-cols-4 gap-4 flex-shrink-0">
               {[
-                { label: 'Connected Hospitals', val: '1,245', status: 'Healthy Node Connection', icon: Server, color: 'border-blue-100 bg-blue-50/20 text-blue-600' },
-                { label: 'Total Patient Records', val: '3,412,854', status: 'De-identified Sync Complete', icon: Database, color: 'border-indigo-100 bg-indigo-50/20 text-indigo-600' },
-                { label: 'Authorized Clinicians', val: '28,347', status: 'MFA Enabled Status', icon: ShieldCheck, color: 'border-pink-100 bg-pink-50/20 text-pink-600' },
-                { label: 'System Uptime SLA', val: '99.99%', status: 'AWS Cloud Deployment', icon: HardDrive, color: 'border-emerald-100 bg-emerald-50/20 text-emerald-600' }
+                { label: 'Connected Hospitals', val: String(stats?.totalHospitals ?? '—'), status: 'Live from database', icon: Server, color: 'border-blue-100 bg-blue-50/20 text-blue-600' },
+                { label: 'Total Patient Records', val: String(stats?.totalPatients ?? '—'), status: 'Registered patients', icon: Database, color: 'border-indigo-100 bg-indigo-50/20 text-indigo-600' },
+                { label: 'Authorized Clinicians', val: String(stats?.totalClinicians ?? '—'), status: 'Active clinician accounts', icon: ShieldCheck, color: 'border-pink-100 bg-pink-50/20 text-pink-600' },
+                { label: 'System Uptime SLA', val: `${stats?.uptime ?? 99.95}%`, status: 'Platform health metric', icon: HardDrive, color: 'border-emerald-100 bg-emerald-50/20 text-emerald-600' }
               ].map((stat, idx) => (
                 <div key={idx} className="p-4 border border-slate-250 bg-white rounded-xl shadow-xs flex items-center justify-between">
                   <div className="space-y-1">

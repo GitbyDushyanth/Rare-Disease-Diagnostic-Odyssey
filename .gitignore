@@ -6,6 +6,8 @@ __pycache__/
 # Database
 db.sqlite3
 db.sqlite3-journal
+dev.db
+dev.db-journal
 
 # Environments
 .env

@@ -23,7 +23,15 @@ export interface AuditLog {
   details: string;
 }
 
+export interface DiagnosticSuggestion {
+  diseaseName: string;
+  confidenceScore: number;
+  rank?: number;
+  explanation?: string;
+}
+
 export interface SharedState {
+  patientId?: string;
   patientProfile: {
     name: string;
     age: number;
@@ -32,8 +40,11 @@ export interface SharedState {
     status: string;
     isCompleted: boolean;
   };
+  diagnosticSuggestions: DiagnosticSuggestion[];
   symptomLogs: SymptomLog[];
   uploadedFiles: MedicalFile[];
+  loading?: boolean;
+  error?: string | null;
   genomicData: {
     fileName: string;
     status: 'idle' | 'uploading' | 'analyzing' | 'completed';
@@ -45,11 +56,11 @@ export interface SharedState {
       variant: string;
       acmg: string;
       confidence: number;
-      clinvar: string;
-      gnomad: number;
-      omim: string;
-      literature: number;
-      notes: string;
+      clinvar?: string;
+      gnomad?: number;
+      omim?: string;
+      literature?: number;
+      notes?: string;
     }[];
   };
   carePlanCreated: boolean;
