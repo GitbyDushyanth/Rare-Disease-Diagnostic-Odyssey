@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Activity, Users, AlertTriangle, Clock, Search, Folder, CheckSquare, 
   Send, AlertCircle, FileText, ChevronRight, UserPlus, Sparkles,
-  Clipboard, Calendar, ArrowUpRight, GraduationCap, MapPin, Loader2
+  Clipboard, Calendar, ArrowUpRight, GraduationCap, MapPin, Loader2, Settings, Bell
 } from 'lucide-react';
 import type { SharedState } from '../types';
 import {
@@ -13,6 +13,7 @@ import {
   referCase,
   type CaseRecord,
 } from '../api/clinician';
+import { getNotifications, markNotificationAsRead, type NotificationRecord } from '../api/notifications';
 import { calcAge, formatGender, timeAgo } from '../utils/format';
 import { ApiError } from '../api/client';
 
@@ -53,12 +54,14 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
   const [activeTab, setActiveTab] = useState<'timeline' | 'records' | 'labs' | 'notes'>('timeline');
   const [clinicianSearch, setClinicianSearch] = useState('');
   const [cases, setCases] = useState<CaseRecord[]>([]);
+  const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [dashboard, setDashboard] = useState<{
     activeCases: number;
     urgentCases: number;
     pendingInterpretations: number;
     avgResolutionDays: number;
   } | null>(null);
+  const [activeSidebarTab, setActiveSidebarTab] = useState('Dashboard');
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -66,10 +69,11 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
     let cancelled = false;
     (async () => {
       try {
-        const [dash, caseList] = await Promise.all([getClinicianDashboard(), getCases()]);
+        const [dash, caseList, notifs] = await Promise.all([getClinicianDashboard(), getCases(), getNotifications()]);
         if (cancelled) return;
         setDashboard(dash.stats);
         setCases(caseList);
+        setNotifications(notifs.data);
         if (caseList.length > 0) {
           setSelectedCaseId(caseList[0].id);
           onCaseSelect?.(caseList[0].patient);
@@ -92,7 +96,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
       id: c.id,
       patientId: c.patientId,
       name: c.patient.user.fullName,
-      age: `${calcAge(c.patient.dateOfBirth)}y`,
+      age: `${calcAge(c.patient.dateOfBirth)} y/o`,
       gender: formatGender(c.patient.user.gender),
       code: c.title,
       symptoms: c.description || 'No description',
@@ -169,7 +173,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
           
           <nav className="space-y-1">
             {[
-              { label: 'Dashboard', icon: Activity, active: true },
+              { label: 'Dashboard', icon: Activity },
               { label: 'Patients', icon: Users, count: 142 },
               { label: 'Case Queue', icon: Clock, count: 8, urgent: true },
               { label: 'Alerts', icon: AlertCircle, count: 32 },
@@ -177,11 +181,13 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
               { label: 'Knowledge Base', icon: GraduationCap },
               { label: 'Specialists', icon: UserPlus },
               { label: 'Reports', icon: FileText },
+              { label: 'Settings', icon: Settings },
             ].map((item, idx) => (
               <button 
                 key={idx}
+                onClick={() => setActiveSidebarTab(item.label)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
-                  item.active 
+                  activeSidebarTab === item.label 
                     ? 'bg-brand-600 text-white shadow-md' 
                     : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
                 }`}
@@ -223,11 +229,11 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
         {/* Header toolbar */}
         <div className="flex justify-between items-center pb-5 border-b border-slate-800 flex-shrink-0">
           <div>
-            <h2 className="font-display font-extrabold text-2xl text-slate-100 tracking-tight">Clinician Workstation</h2>
+            <h2 className="font-display font-extrabold text-2xl text-slate-100 tracking-tight">Dashboard Overview</h2>
             <p className="text-xs text-slate-400">Collaborative Clinical Decision Support & Diagnostics</p>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
               <input 
@@ -239,8 +245,11 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
               />
             </div>
             <div className="relative w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-750 text-slate-300">
-              <AlertCircle className="w-4.5 h-4.5" />
+              <Bell className="w-4.5 h-4.5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            </div>
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-700">
+              <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&auto=format&fit=crop&q=80" alt="Profile" className="w-full h-full object-cover" />
             </div>
           </div>
         </div>
@@ -259,12 +268,12 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
         )}
 
         {/* Stats banner row */}
-        {!loading && <div className="grid grid-cols-4 gap-4 mt-5 flex-shrink-0">
+        {!loading && activeSidebarTab === 'Dashboard' && <div className="grid grid-cols-4 gap-4 mt-5 flex-shrink-0">
           {[
             { label: 'Active Cases', val: String(dashboard?.activeCases ?? '—'), change: 'Live from API', icon: Users, color: 'text-brand-400 bg-brand-500/10' },
             { label: 'Urgent Cases', val: String(dashboard?.urgentCases ?? '—'), change: 'Requires attention', icon: AlertTriangle, color: 'text-red-400 bg-red-500/10' },
             { label: 'Avg. Resolution Time', val: `${dashboard?.avgResolutionDays ?? 12} Days`, change: 'Platform metric', icon: Clock, color: 'text-emerald-400 bg-emerald-500/10' },
-            { label: 'Pending Interpretations', val: String(dashboard?.pendingInterpretations ?? '—'), change: 'Lab queue', icon: Activity, color: 'text-indigo-400 bg-indigo-500/10' },
+            { label: 'Rare Disease Alerts', val: String(dashboard?.pendingInterpretations ?? '—'), change: 'New signals found', icon: Activity, color: 'text-indigo-400 bg-indigo-500/10' },
           ].map((stat, idx) => (
             <div key={idx} className="bg-clinician-card p-4 rounded-xl border border-slate-800/80 shadow-sm flex items-center justify-between">
               <div className="space-y-1">
@@ -280,13 +289,13 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
         </div>}
 
         {/* Dynamic Patient Selector and Diagnostic Layout */}
-        {!loading && <div className="grid grid-cols-12 gap-5 mt-5 flex-1 min-h-0">
+        {!loading && activeSidebarTab === 'Dashboard' && <div className="grid grid-cols-12 gap-5 mt-5 flex-1 min-h-0">
           
           {/* Left Col: Cases list queue (Span 4) */}
           <div className="col-span-4 bg-clinician-card rounded-xl border border-slate-800/80 p-4 flex flex-col">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-display font-bold text-sm text-slate-200">Patient Case Queue</h3>
-              <span className="text-[10px] font-bold text-brand-400 hover:underline cursor-pointer">View All</span>
+              <span onClick={() => setActiveSidebarTab('Case Queue')} className="text-[10px] font-bold text-brand-400 hover:underline cursor-pointer">View All</span>
             </div>
             
             <div className="space-y-2.5 overflow-y-auto flex-1 pr-1">
@@ -598,9 +607,152 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
             </div>
             </>}
 
+            {/* Additional Dashboard Sections: Alerts & Reviews */}
+            <div className="grid grid-cols-2 gap-5 flex-shrink-0">
+              {/* Diagnostic Alerts */}
+              <div className="bg-clinician-card rounded-xl border border-slate-800/80 p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="font-display font-bold text-sm text-slate-200">Diagnostic Alerts</h4>
+                  <span onClick={() => setActiveSidebarTab('Alerts')} className="text-[10px] font-bold text-brand-400 hover:underline cursor-pointer">View All</span>
+                </div>
+                <div className="space-y-3">
+                  {notifications.filter(n => !n.isRead).slice(0, 3).map(notif => (
+                    <div key={notif.id} className="flex space-x-3 items-start p-2.5 rounded-lg bg-red-500/5 border border-red-500/10">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-200">{notif.title}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{notif.message}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {notifications.filter(n => !n.isRead).length === 0 && (
+                    <p className="text-xs text-slate-500">No unread alerts.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Recent Specialist Reviews */}
+              <div className="bg-clinician-card rounded-xl border border-slate-800/80 p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="font-display font-bold text-sm text-slate-200">Recent Specialist Reviews</h4>
+                  <span className="text-[10px] font-bold text-brand-400 hover:underline cursor-pointer">View All</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex space-x-3 items-center p-2 rounded-lg hover:bg-slate-800/50 transition">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-200">Dr. M. Nair reviewed SJ</p>
+                      <p className="text-[10px] text-slate-400">"Agree with DMD prioritization based on elevated CK and MRI."</p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-3 items-center p-2 rounded-lg hover:bg-slate-800/50 transition">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                      <CheckSquare className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-200">Dr. K. Chen updated case</p>
+                      <p className="text-[10px] text-slate-400">"Added secondary phenotype mapping for epilepsy."</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
         </div>}
+
+        {!loading && activeSidebarTab === 'Case Queue' && (
+          <div className="flex-1 p-6 overflow-y-auto">
+            <h2 className="font-display font-bold text-xl text-slate-100 mb-6">Patient Case Queue</h2>
+            <div className="bg-clinician-card rounded-xl border border-slate-800/80 overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-900/80 border-b border-slate-800 text-slate-400 font-bold">
+                  <tr>
+                    <th className="p-4">Patient</th>
+                    <th className="p-4">Condition / Code</th>
+                    <th className="p-4">Flag</th>
+                    <th className="p-4">Match</th>
+                    <th className="p-4">Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {patientsList.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-800/40 cursor-pointer transition" onClick={() => { handleSelectCase(p); setActiveSidebarTab('Dashboard'); }}>
+                      <td className="p-4 font-semibold text-slate-200">{p.name}<div className="text-[10px] text-slate-500 font-normal">{p.age} • {p.gender}</div></td>
+                      <td className="p-4 text-slate-300">{p.code}</td>
+                      <td className="p-4"><span className={`px-2 py-0.5 rounded uppercase text-[9px] font-bold ${p.flagColor}`}>{p.flag}</span></td>
+                      <td className="p-4 text-brand-400 font-bold">{p.confidence}</td>
+                      <td className="p-4 text-slate-500">{p.time}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {!loading && activeSidebarTab === 'Patients' && (
+          <div className="flex-1 p-6 overflow-y-auto">
+            <h2 className="font-display font-bold text-xl text-slate-100 mb-6">My Patients</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {patientsList.map(p => (
+                <div key={p.id} className="bg-clinician-card border border-slate-800/80 p-5 rounded-xl flex items-center space-x-4 hover:border-brand-500/50 cursor-pointer transition shadow-sm" onClick={() => { handleSelectCase(p); setActiveSidebarTab('Dashboard'); }}>
+                  <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center font-display font-bold text-slate-300 border border-slate-700 shrink-0">
+                    {p.name.split(' ').map(n=>n[0]).join('')}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-200">{p.name}</h4>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{p.age} • {p.gender}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && activeSidebarTab === 'Alerts' && (
+          <div className="flex-1 p-6 overflow-y-auto">
+            <h2 className="font-display font-bold text-xl text-slate-100 mb-6">System Alerts & Notifications</h2>
+            <div className="space-y-4 max-w-4xl">
+              {notifications.map(notif => (
+                <div key={notif.id} className={`p-5 rounded-xl border flex justify-between items-center transition ${notif.isRead ? 'bg-slate-900/40 border-slate-800/50' : 'bg-clinician-card border-slate-700 shadow-md'}`}>
+                  <div className="flex items-start space-x-4">
+                    <div className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${notif.isRead ? 'bg-slate-700' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`} />
+                    <div>
+                      <h4 className={`text-sm font-bold ${notif.isRead ? 'text-slate-400' : 'text-slate-200'}`}>{notif.title}</h4>
+                      <p className={`text-xs mt-1 ${notif.isRead ? 'text-slate-500' : 'text-slate-300'}`}>{notif.message}</p>
+                      <p className="text-[10px] text-slate-500 mt-2.5 font-medium">{new Date(notif.createdAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {!notif.isRead && (
+                    <button onClick={async () => {
+                      await markNotificationAsRead(notif.id);
+                      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+                    }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition border border-slate-700 hover:border-slate-600">
+                      Mark Read
+                    </button>
+                  )}
+                </div>
+              ))}
+              {notifications.length === 0 && (
+                <div className="py-10 text-center text-slate-500 text-sm">No notifications found.</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!loading && !['Dashboard', 'Case Queue', 'Patients', 'Alerts'].includes(activeSidebarTab) && (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+            <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 border border-slate-700 shadow-lg">
+              <Activity className="w-8 h-8 text-slate-500" />
+            </div>
+            <h3 className="font-display font-bold text-xl text-slate-200">{activeSidebarTab}</h3>
+            <p className="text-sm mt-2 max-w-sm text-center">This section is currently under development. Please check back later.</p>
+          </div>
+        )}
 
       </main>
     </div>
