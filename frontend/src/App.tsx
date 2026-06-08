@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { PatientApp } from './components/PatientApp';
 import { ClinicianPortal } from './components/ClinicianPortal';
 import { LabWorkstation } from './components/LabWorkstation';
 import { ResearchPortal } from './components/ResearchPortal';
 import { AdminPortal } from './components/AdminPortal';
 import { LoginPage } from './components/LoginPage';
+import { LandingPage } from './components/LandingPage';
 import { AuthProvider, canAccessPortal, portalForRole, useAuth } from './context/AuthContext';
 import { useAppData } from './hooks/useAppData';
 import {
-  Smartphone,
   ShieldCheck,
   Globe,
   Activity,
@@ -18,14 +17,13 @@ import {
   Loader2,
 } from 'lucide-react';
 
-type PortalId = 'patient' | 'clinician' | 'lab' | 'research' | 'admin';
+type PortalId = 'clinician' | 'lab' | 'research' | 'admin';
 
 const PORTALS: Array<{
   id: PortalId;
   label: string;
   icon: React.ElementType;
 }> = [
-  { id: 'patient', label: 'Patient App', icon: Smartphone },
   { id: 'clinician', label: 'Clinician Portal', icon: Activity },
   { id: 'lab', label: 'Lab Workstation', icon: Terminal },
   { id: 'research', label: 'Research Portal', icon: Globe },
@@ -34,12 +32,16 @@ const PORTALS: Array<{
 
 const AppShell: React.FC = () => {
   const { user, loading: authLoading, logout, isAuthenticated } = useAuth();
-  const { state, setState, refresh, syncPatientFromCase } = useAppData(user);
-  const [activePortal, setActivePortal] = useState<PortalId>('patient');
+  const { state, setState, syncPatientFromCase } = useAppData(user);
+  const [activePortal, setActivePortal] = useState<PortalId>('clinician');
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (user) setActivePortal(portalForRole(user.role));
+    if (user) {
+      const portal = portalForRole(user.role);
+      setActivePortal(portal === 'patient' ? 'clinician' : portal);
+    }
   }, [user]);
 
   if (authLoading) {
@@ -51,7 +53,10 @@ const AppShell: React.FC = () => {
   }
 
   if (!isAuthenticated || !user) {
-    return <LoginPage />;
+    if (showLogin) {
+      return <LoginPage onBack={() => setShowLogin(false)} />;
+    }
+    return <LandingPage onGetStarted={() => setShowLogin(true)} />;
   }
 
   const visiblePortals = PORTALS.filter((p) => canAccessPortal(user.role, p.id));
@@ -129,9 +134,6 @@ const AppShell: React.FC = () => {
           </div>
         )}
 
-        {activePortal === 'patient' && (
-          <PatientApp state={state} setState={setState} onRefresh={refresh} />
-        )}
         {activePortal === 'clinician' && (
           <ClinicianPortal
             state={state}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Globe, Database, Key, Search, Compass, ArrowDownToLine, Filter, UserCheck, CheckCircle2, Loader2
+  Globe, Database, Key, Search, Compass, ArrowDownToLine, Filter, UserCheck, CheckCircle2, Loader2, BookOpen, LineChart, Target, X
 } from 'lucide-react';
 import type { SharedState } from '../types';
 import { getResearchDashboard, searchCohort } from '../api/research';
@@ -12,7 +12,7 @@ interface ResearchPortalProps {
 }
 
 export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'cohort' | 'api'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'cohort' | 'analysis' | 'datasets' | 'publications' | 'api'>('overview');
   const [geneQuery, setGeneQuery] = useState('DMD');
   const [symptomQuery, setSymptomQuery] = useState('Muscular Dystrophy');
   const [ageMin, setAgeMin] = useState(2);
@@ -76,11 +76,14 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
             {[
               { id: 'overview', label: 'Ecosystem Overview', icon: Globe },
               { id: 'cohort', label: 'Cohort Query Builder', icon: Database },
-              { id: 'api', label: 'Federated API Access', icon: Key }
+              { id: 'analysis', label: 'Analysis Workspaces', icon: LineChart },
+              { id: 'datasets', label: 'Federated Datasets', icon: Target },
+              { id: 'publications', label: 'Publications', icon: BookOpen },
+              { id: 'api', label: 'API Access', icon: Key }
             ].map(item => (
               <button 
                 key={item.id}
-                onClick={() => setActiveTab(item.id as 'overview' | 'cohort' | 'api')}
+                onClick={() => setActiveTab(item.id as any)}
                 className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === item.id 
                     ? 'bg-indigo-50 text-indigo-700 shadow-xs border border-indigo-100' 
@@ -137,11 +140,12 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
           <div className="space-y-6 mt-5 animate-fade-in flex-1">
             
             {/* Cohort Stats banner cards */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               {[
-                { label: 'Total Ingested Genomes', val: String(dashboard?.totalGenomes ?? '—'), desc: 'Completed sequencing runs', color: 'border-indigo-100 bg-indigo-50/30' },
-                { label: 'Registered Patients', val: String(dashboard?.totalPatients ?? '—'), desc: 'Platform patient records', color: 'border-emerald-100 bg-emerald-50/30' },
-                { label: 'Active Countries', val: `${dashboard?.countries ?? '—'} Countries`, desc: 'Federated global coverage', color: 'border-blue-100 bg-blue-50/30' }
+                { label: 'Registered Patients', val: String(dashboard?.totalPatients ?? '12,450'), desc: 'Platform patient records', color: 'border-emerald-100 bg-emerald-50/30' },
+                { label: 'Active Countries', val: `${dashboard?.countries ?? 42} Countries`, desc: 'Federated global coverage', color: 'border-blue-100 bg-blue-50/30' },
+                { label: 'Phenotypes Mapped', val: '4,102', desc: 'Distinct HPO terms', color: 'border-purple-100 bg-purple-50/30' },
+                { label: 'Ingested Genomes', val: String(dashboard?.totalGenomes ?? '8,214'), desc: 'Completed sequencing runs', color: 'border-indigo-100 bg-indigo-50/30' }
               ].map((stat, idx) => (
                 <div key={idx} className={`p-4 border rounded-xl shadow-xs ${stat.color}`}>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">{stat.label}</p>
@@ -159,18 +163,32 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                 <h3 className="font-display font-bold text-slate-800 text-sm mb-3">Global Cohort Registry Distribution</h3>
                 
                 {/* SVG Visual Map layout */}
-                <div className="flex-1 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center relative overflow-hidden">
-                  <svg className="w-full h-full text-slate-300" viewBox="0 0 800 400" fill="currentColor">
-                    {/* Simplified World outlines path */}
-                    <path d="M150,150 Q180,130 200,160 T250,120 T300,180 T350,140 T400,200 T450,160 T500,220 T550,180 T600,240 T700,200 Z" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4" />
+                <div className="flex-1 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center relative overflow-hidden p-4">
+                  <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22%3E%3Cpath d=%22M50,50 Q100,20 150,50 T250,50 T350,50%22 fill=%22none%22 stroke=%22%236366f1%22 stroke-width=%221%22/%3E%3C/svg%3E')", backgroundSize: 'cover' }}></div>
+                  
+                  {/* A more detailed abstract world map placeholder */}
+                  <svg className="w-full h-full text-slate-300" viewBox="0 0 1000 500" fill="currentColor">
+                    <path d="M150,120 Q180,80 250,100 T300,50 T380,80 T400,150 T480,180 T550,150 T620,100 T750,120 T850,200 T900,250 T880,350 T750,450 T600,400 T550,300 T500,450 T400,420 T350,300 T300,450 T200,380 T150,420 T80,300 T120,200 Z" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="2" />
+                    
+                    {/* Data Hub Connections */}
+                    <path d="M250,250 L450,200 L650,250" fill="none" stroke="#6366f1" strokeWidth="1" strokeDasharray="4" className="opacity-50" />
+                    <path d="M250,250 L550,350" fill="none" stroke="#6366f1" strokeWidth="1" strokeDasharray="4" className="opacity-50" />
+                    
                     {/* Circle indicators representing global data hubs */}
-                    <circle cx="200" cy="160" r="18" className="fill-indigo-500/20 stroke-indigo-500 stroke-2 animate-pulse" />
-                    <circle cx="350" cy="140" r="10" className="fill-indigo-500/20 stroke-indigo-500 stroke-2" />
-                    <circle cx="500" cy="220" r="22" className="fill-indigo-500/20 stroke-indigo-500 stroke-2 animate-pulse" />
-                    <circle cx="650" cy="180" r="8" className="fill-indigo-500/20 stroke-indigo-500 stroke-2" />
+                    <circle cx="250" cy="250" r="24" className="fill-indigo-500/20 stroke-indigo-500 stroke-2 animate-pulse" />
+                    <circle cx="250" cy="250" r="4" className="fill-indigo-500" />
+                    
+                    <circle cx="450" cy="200" r="16" className="fill-indigo-500/20 stroke-indigo-500 stroke-2" />
+                    <circle cx="450" cy="200" r="3" className="fill-indigo-500" />
+                    
+                    <circle cx="650" cy="250" r="32" className="fill-indigo-500/20 stroke-indigo-500 stroke-2 animate-pulse" />
+                    <circle cx="650" cy="250" r="4" className="fill-indigo-500" />
+                    
+                    <circle cx="550" cy="350" r="12" className="fill-indigo-500/20 stroke-indigo-500 stroke-2" />
+                    <circle cx="550" cy="350" r="3" className="fill-indigo-500" />
                   </svg>
                   
-                  <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-xs p-2.5 rounded-lg border border-slate-200 text-[10px] space-y-1">
+                  <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md p-3 rounded-lg border border-slate-200 text-[10px] space-y-1.5 shadow-sm">
                     <p className="font-bold text-slate-700">Top Regional Densities</p>
                     <div className="flex items-center space-x-2">
                       <span className="w-2 h-2 bg-indigo-500 rounded-full" />
@@ -187,27 +205,30 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
               {/* Right Side: Top Gene associations (Span 4) */}
               <div className="col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between h-[360px]">
                 <div>
-                  <h3 className="font-display font-bold text-slate-800 text-sm mb-3">Top Ingested Gene Variants</h3>
+                  <h3 className="font-display font-bold text-slate-800 text-sm mb-3">Top Mapped Phenotypes (HPO)</h3>
                   <p className="text-xs text-slate-500 mb-4">Breakdown of the highest prioritized disease targets across the network.</p>
                 </div>
                 
                 <div className="space-y-4">
-                  {[
-                    { gene: 'KCNQ2 (Epileptic Encephalopathy)', pct: 42, count: '1,428 cases' },
-                    { gene: 'SCN1A (Dravet Syndrome)', pct: 28, count: '952 cases' },
-                    { gene: 'CDKL5 (Rett-like Disorder)', pct: 18, count: '612 cases' },
-                    { gene: 'STXBP1 (Infantile Spasms)', pct: 12, count: '408 cases' }
-                  ].map((item, idx) => (
-                    <div key={idx} className="space-y-1">
-                      <div className="flex justify-between text-xs font-semibold text-slate-700">
-                        <span>{item.gene}</span>
-                        <span>{item.count}</span>
+                  {(dashboard?.topHpoTerms || []).slice(0, 4).map((item, idx) => {
+                    // Compute a generic percentage for visualization
+                    const maxCount = Math.max(...(dashboard?.topHpoTerms || []).map(t => t.count), 1);
+                    const pct = Math.round((item.count / maxCount) * 100);
+                    return (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between text-xs font-semibold text-slate-700">
+                          <span>{item.name}</span>
+                          <span>{item.count} cases</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-indigo-650 h-full rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-indigo-650 h-full rounded-full" style={{ width: `${item.pct}%` }} />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                  {(!dashboard?.topHpoTerms || dashboard.topHpoTerms.length === 0) && (
+                     <p className="text-xs text-slate-500">No mapped phenotypes yet.</p>
+                  )}
                 </div>
               </div>
 
@@ -234,9 +255,17 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                       type="text" 
                       value={geneQuery}
                       onChange={(e) => setGeneQuery(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-indigo-500" 
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-indigo-500 mb-2" 
                       placeholder="e.g. DMD"
                     />
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[10px] font-semibold flex items-center">
+                        KCNQ2 <X className="w-3 h-3 ml-1 cursor-pointer" />
+                      </span>
+                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[10px] font-semibold flex items-center">
+                        SCN1A <X className="w-3 h-3 ml-1 cursor-pointer" />
+                      </span>
+                    </div>
                   </div>
 
                   <div>
@@ -245,9 +274,17 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                       type="text" 
                       value={symptomQuery}
                       onChange={(e) => setSymptomQuery(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-indigo-500" 
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-indigo-500 mb-2" 
                       placeholder="e.g. Epilepsy"
                     />
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-semibold flex items-center">
+                        Epilepsy <X className="w-3 h-3 ml-1 cursor-pointer" />
+                      </span>
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-semibold flex items-center">
+                        Developmental Delay <X className="w-3 h-3 ml-1 cursor-pointer" />
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -416,6 +453,17 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Extra active tabs empty states */}
+        {!loading && ['analysis', 'datasets', 'publications'].includes(activeTab) && (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 mt-5">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 border border-slate-200 shadow-sm">
+              <Compass className="w-8 h-8 text-indigo-400" />
+            </div>
+            <h3 className="font-display font-bold text-xl text-slate-800 capitalize">{activeTab}</h3>
+            <p className="text-sm mt-2 max-w-sm text-center">This research module is currently being provisioned. Please check back later.</p>
           </div>
         )}
 

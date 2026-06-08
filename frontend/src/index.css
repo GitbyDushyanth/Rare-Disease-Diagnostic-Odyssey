@@ -9,6 +9,7 @@
 
   --color-brand-50: #f5f8ff;
   --color-brand-100: #ebf1ff;
+  --color-brand-400: #60a5fa;
   --color-brand-500: #2563eb;
   --color-brand-600: #1d4ed8;
   --color-brand-700: #1d4ed8;
@@ -23,6 +24,20 @@
 
   --color-research-accent: #6366f1;
   --color-admin-accent: #ec4899;
+
+  --color-slate-150: #e2e8f0;
+  --color-slate-250: #cbd5e1;
+  --color-slate-350: #94a3b8;
+  --color-slate-550: #475569;
+  --color-slate-650: #334155;
+  --color-slate-750: #1e293b;
+  --color-slate-805: #152238;
+  --color-slate-850: #131c2f;
+  --color-slate-950: #0b0f19;
+
+  --color-indigo-650: #4f46e5;
+  --color-pink-650: #db2777;
+  --color-emerald-650: #059669;
 }
 
 :root {
@@ -93,4 +108,55 @@
 body {
   margin: 0;
   overflow-x: hidden;
+}
+
+/* Custom Range Slider */
+input[type=range] {
+  -webkit-appearance: none; /* Hides the slider so that custom slider can be made */
+  width: 100%; /* Specific width is required for Firefox. */
+  background: transparent; /* Otherwise white in Chrome */
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  margin-top: -8px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+  border: 2px solid #ffffff;
+  transition: all 0.2s ease;
+}
+
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3);
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #e2e8f0;
+  border-radius: 999px;
+  border: none;
+}
+
+/* Background Particle Animation */
+@keyframes float {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(360deg);
+  }
+}
+
+.animate-float {
+  animation: float 20s infinite linear;
 }

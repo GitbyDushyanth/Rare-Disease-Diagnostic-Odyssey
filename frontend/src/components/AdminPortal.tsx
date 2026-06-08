@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   ShieldCheck, Server, ClipboardList, Database, HardDrive, 
-  Search, CheckCircle2, Activity, AlertTriangle, Loader2
+  Search, CheckCircle2, Activity, AlertTriangle, Loader2, Users, Key, CreditCard, Globe
 } from 'lucide-react';
 import type { SharedState } from '../types';
 import { getAdminDashboard, getComplianceReport } from '../api/admin';
@@ -13,7 +13,7 @@ interface AdminPortalProps {
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'audit' | 'quality'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles' | 'audit' | 'billing' | 'quality'>('overview');
   const [auditSearch, setAuditSearch] = useState('');
   const [stats, setStats] = useState<{
     totalPatients: number;
@@ -82,12 +82,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
           <nav className="space-y-1">
             {[
               { id: 'overview', label: 'Platform Overview', icon: Server },
-              { id: 'audit', label: 'Compliance Audit Logs', icon: ClipboardList },
+              { id: 'users', label: 'Users', icon: Users },
+              { id: 'roles', label: 'Roles & Permissions', icon: Key },
+              { id: 'audit', label: 'Audit Logs', icon: ClipboardList },
+              { id: 'billing', label: 'Billing', icon: CreditCard },
               { id: 'quality', label: 'Data Quality Engine', icon: Database }
             ].map(item => (
               <button 
                 key={item.id}
-                onClick={() => setActiveTab(item.id as 'overview' | 'audit' | 'quality')}
+                onClick={() => setActiveTab(item.id as any)}
                 className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === item.id 
                     ? 'bg-pink-50 text-pink-700 shadow-xs border border-pink-100' 
@@ -118,7 +121,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
         {/* Header toolbar */}
         <div className="flex justify-between items-center pb-5 border-b border-slate-200 flex-shrink-0">
           <div>
-            <h2 className="font-display font-extrabold text-2xl text-slate-900 tracking-tight">Admin & Compliance Portal</h2>
+            <h2 className="font-display font-extrabold text-2xl text-slate-900 tracking-tight">Lumen OS Operations</h2>
             <p className="text-xs text-slate-500">Security Access Governance & Infrastructure Monitoring</p>
           </div>
           <div className="text-xs text-pink-700 bg-pink-50 border border-pink-100 px-3 py-1.5 rounded-lg font-semibold flex items-center">
@@ -140,9 +143,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
             {/* Top metrics dashboard */}
             <div className="grid grid-cols-4 gap-4 flex-shrink-0">
               {[
-                { label: 'Connected Hospitals', val: String(stats?.totalHospitals ?? '—'), status: 'Live from database', icon: Server, color: 'border-blue-100 bg-blue-50/20 text-blue-600' },
-                { label: 'Total Patient Records', val: String(stats?.totalPatients ?? '—'), status: 'Registered patients', icon: Database, color: 'border-indigo-100 bg-indigo-50/20 text-indigo-600' },
-                { label: 'Authorized Clinicians', val: String(stats?.totalClinicians ?? '—'), status: 'Active clinician accounts', icon: ShieldCheck, color: 'border-pink-100 bg-pink-50/20 text-pink-600' },
+                { label: 'Total Users', val: String(stats?.totalClinicians ? stats.totalClinicians + stats.totalPatients : '—'), status: 'Registered accounts', icon: Users, color: 'border-blue-100 bg-blue-50/20 text-blue-600' },
+                { label: 'Active Nodes', val: String(stats?.totalHospitals ?? '—'), status: 'Federated hospital nodes', icon: Server, color: 'border-indigo-100 bg-indigo-50/20 text-indigo-600' },
+                { label: 'API Calls / Min', val: '4,281', status: 'Slightly elevated', icon: Activity, color: 'border-pink-100 bg-pink-50/20 text-pink-600' },
                 { label: 'System Uptime SLA', val: `${stats?.uptime ?? 99.95}%`, status: 'Platform health metric', icon: HardDrive, color: 'border-emerald-100 bg-emerald-50/20 text-emerald-600' }
               ].map((stat, idx) => (
                 <div key={idx} className="p-4 border border-slate-250 bg-white rounded-xl shadow-xs flex items-center justify-between">
@@ -189,6 +192,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
                 <p className="text-[10px] text-slate-400 mt-4 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-150">
                   Data quality engine computes continuous verification indexes from the NLP mapper output accuracy versus gold-standard ClinVar genomic annotators.
                 </p>
+
+                <div className="mt-6">
+                  <h3 className="font-display font-bold text-slate-850 text-sm mb-3 flex items-center">
+                    <Globe className="w-4 h-4 mr-2 text-slate-400" />
+                    Global Network Traffic
+                  </h3>
+                  <div className="h-24 bg-slate-50 border border-slate-150 rounded-lg flex items-end px-2 py-1 space-x-1">
+                    {Array.from({ length: 40 }).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="w-full bg-pink-500/20 rounded-t-sm" 
+                        style={{ height: `${Math.max(10, Math.random() * 100)}%` }} 
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Right Column: Reports audit trigger (Span 5) */}
@@ -302,6 +321,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
                 <div className="text-[10px] text-pink-650 font-bold">98% Referencing integrity</div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Empty states for new tabs */}
+        {!loading && ['users', 'roles', 'billing'].includes(activeTab) && (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 mt-5">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 border border-slate-200 shadow-sm">
+              <ShieldCheck className="w-8 h-8 text-pink-400" />
+            </div>
+            <h3 className="font-display font-bold text-xl text-slate-800 capitalize">{activeTab} Management</h3>
+            <p className="text-sm mt-2 max-w-sm text-center">This administration module is restricted or currently under maintenance.</p>
           </div>
         )}
 
