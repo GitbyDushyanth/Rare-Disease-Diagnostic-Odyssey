@@ -104,3 +104,13 @@
 {"level":"http","message":"::1 - - [08/Jun/2026:10:59:03 +0000] \"GET /api/v1/clinician/cases HTTP/1.1\" 304 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36\"","timestamp":"2026-06-08 16:29:03"}
 {"level":"http","message":"::1 - - [08/Jun/2026:10:59:03 +0000] \"GET /api/v1/patients/6d1d2d6d-3a75-45d9-a089-2fa1b2c57db3 HTTP/1.1\" 304 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36\"","timestamp":"2026-06-08 16:29:03"}
 {"level":"http","message":"::1 - - [08/Jun/2026:10:59:25 +0000] \"POST /api/v1/clinician/care-plan HTTP/1.1\" 201 346 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36\"","timestamp":"2026-06-08 16:29:25"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-09 21:16:59"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-09 21:16:59"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-09 21:16:59"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-09 21:16:59"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-09 21:16:59"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-06-09 21:17:01"}
+{"level":"info","message":"🚀 LUMEN API running on http://localhost:3001","timestamp":"2026-06-09 21:17:01"}
+{"level":"info","message":"📋 API base: http://localhost:3001/api/v1","timestamp":"2026-06-09 21:17:01"}
+{"level":"info","message":"❤️  Health: http://localhost:3001/health","timestamp":"2026-06-09 21:17:01"}
+{"level":"info","message":"🧬 Environment: development","timestamp":"2026-06-09 21:17:01"}

@@ -72,7 +72,7 @@ router.post(
 router.post(
   '/upload',
   requireRole(['clinician', 'lab', 'admin']),
-  uploadGenomic.single('file'),
+  uploadGenomic.single('file') as express.RequestHandler,
   auditLog({ resource: 'genomic_file' }),
   async (req: AuthenticatedRequest, res, next) => {
     try {
