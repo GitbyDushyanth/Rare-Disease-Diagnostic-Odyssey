@@ -41,7 +41,7 @@ const upload = multer({
 // ── POST /api/v1/documents/upload ─────────────────────────────────────────────
 router.post(
   '/upload',
-  upload.single('file'),
+  upload.single('file') as express.RequestHandler,
   auditLog({ resource: 'document' }),
   async (req: AuthenticatedRequest, res, next) => {
     try {
