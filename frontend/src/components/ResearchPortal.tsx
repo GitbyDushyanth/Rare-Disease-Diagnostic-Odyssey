@@ -22,6 +22,7 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
     totalGenomes: number;
     countries: number;
     totalTrials: number;
+    topHpoTerms?: { name: string; count: number }[];
   } | null>(null);
   const [cohortTotal, setCohortTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
