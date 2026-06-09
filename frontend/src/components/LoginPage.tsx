@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Globe, ShieldCheck, Smartphone, Sparkles, Terminal, ArrowLeft } from 'lucide-react';
+import { Activity, Globe, ShieldCheck, Sparkles, Terminal, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import type { UserRole } from '../api/auth';
