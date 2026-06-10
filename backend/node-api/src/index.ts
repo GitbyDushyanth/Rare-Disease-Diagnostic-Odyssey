@@ -34,9 +34,12 @@ app.use(helmet({
 
 app.use(cors({
   origin: (origin, cb) => {
-    const allowed = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',');
-    if (!origin || allowed.includes(origin)) cb(null, true);
-    else cb(new Error(`CORS blocked: ${origin}`));
+    const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,https://rare-disease-diagnostic-odyssey.vercel.app').split(',');
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      cb(null, true);
+    } else {
+      cb(new Error(`CORS blocked: ${origin}`));
+    }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
