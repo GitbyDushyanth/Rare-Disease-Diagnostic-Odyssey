@@ -81,3 +81,13 @@ export async function getSpecialists(specialty?: string): Promise<SpecialistReco
   const res = await apiGet<ApiResponse<SpecialistRecord[]>>(`/clinician/specialists${query}`);
   return res.data;
 }
+
+export async function createCase(data: {
+  patientId: string;
+  title: string;
+  description?: string;
+  priority?: 'routine' | 'urgent' | 'emergency';
+}): Promise<CaseRecord> {
+  const res = await apiPost<ApiResponse<CaseRecord>>('/clinician/cases', data);
+  return res.data;
+}
