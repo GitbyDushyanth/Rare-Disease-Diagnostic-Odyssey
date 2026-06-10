@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Activity, Users, AlertTriangle, Clock, Search, Folder, CheckSquare,
   Send, AlertCircle, FileText, ChevronRight, UserPlus, Sparkles,
@@ -121,42 +121,53 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
   const [actionError, setActionError] = useState<string | null>(null);
   const [showAddPatient, setShowAddPatient] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [dash, caseList, notifs, specialists] = await Promise.all([
-        getClinicianDashboard(),
-        getCases(),
-        getNotifications(),
-        getSpecialists().catch(() => [] as SpecialistRecord[]),
-      ]);
-      setDashboard(dash.stats);
-      setCases(caseList);
-      setNotifications(notifs.data);
-      setSpecialist(specialists[0] ?? null);
-      if (caseList.length > 0) {
-        setSelectedCaseId(caseList[0].id);
-        onCaseSelect?.(caseList[0].patient);
-      }
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'Failed to load clinician data');
-    } finally {
-      setLoading(false);
-    }
-  }, [onCaseSelect]);
-
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [dash, caseList, notifs, specialists] = await Promise.all([
+          getClinicianDashboard(),
+          getCases(),
+          getNotifications(),
+          getSpecialists().catch(() => [] as SpecialistRecord[]),
+        ]);
+        if (cancelled) return;
+        setDashboard(dash.stats);
+        setCases(caseList);
+        setNotifications(notifs.data);
+        setSpecialist(specialists[0] ?? null);
+        if (caseList.length > 0) {
+          setSelectedCaseId(caseList[0].id);
+          onCaseSelect?.(caseList[0].patient);
+        }
+      } catch (err) {
+        if (!cancelled) setActionError(err instanceof ApiError ? err.message : 'Failed to load clinician data');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   // Fetch timeline when patient changes
   useEffect(() => {
     if (!state.patientId) return;
-    setTimelineLoading(true);
-    getPatientTimeline(state.patientId)
-      .then(setTimeline)
-      .catch(() => setTimeline([]))
-      .finally(() => setTimelineLoading(false));
+    let cancelled = false;
+    (async () => {
+      setTimelineLoading(true);
+      try {
+        const events = await getPatientTimeline(state.patientId!);
+        if (!cancelled) setTimeline(events);
+      } catch {
+        if (!cancelled) setTimeline([]);
+      } finally {
+        if (!cancelled) setTimelineLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [state.patientId]);
 
   const patientsList: QueuePatient[] = cases.map((c) => {
@@ -666,10 +677,10 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                           {state.genomicData.prioritizedVariants.slice(0, 3).map((v, idx) => (
                             <div key={idx} className="p-2.5 bg-slate-900 rounded-lg border border-slate-800 mb-2">
                               <div className="flex justify-between items-center">
-                                <span className="font-bold text-slate-300">{(v as Record<string, string>).gene} — {(v as Record<string, string>).variant}</span>
-                                <span className="text-[10px] px-2 py-0.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 rounded font-bold uppercase">{(v as Record<string, string>).acmg}</span>
+                                <span className="font-bold text-slate-300">{v.gene} — {v.variant}</span>
+                                <span className="text-[10px] px-2 py-0.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 rounded font-bold uppercase">{v.acmg}</span>
                               </div>
-                              <p className="text-[10px] text-slate-500 mt-0.5">Confidence: {(v as Record<string, number>).confidence}%</p>
+                              <p className="text-[10px] text-slate-500 mt-0.5">Confidence: {v.confidence}%</p>
                             </div>
                           ))}
                         </div>
