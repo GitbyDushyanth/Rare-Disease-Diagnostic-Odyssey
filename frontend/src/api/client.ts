@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+const rawApiUrl = import.meta.env.VITE_API_URL || '/api/v1';
+const API_BASE = rawApiUrl.endsWith('/api/v1') 
+  ? rawApiUrl 
+  : `${rawApiUrl.replace(/\/$/, '')}/api/v1`;
 
 const ACCESS_TOKEN_KEY = 'lumen_access_token';
 const REFRESH_TOKEN_KEY = 'lumen_refresh_token';
