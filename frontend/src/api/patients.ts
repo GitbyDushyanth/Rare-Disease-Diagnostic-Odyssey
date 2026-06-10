@@ -1,4 +1,10 @@
-import { apiGet, apiPatch, type ApiResponse } from './client';
+import { apiGet, apiPatch, apiPost, type ApiResponse } from './client';
+
+export interface TimelineEvent {
+  type: 'symptom' | 'encounter' | 'condition' | 'document';
+  date: string;
+  data: Record<string, unknown>;
+}
 
 export interface PatientRecord {
   id: string;
@@ -50,5 +56,19 @@ export async function updatePatient(
   data: Partial<{ heightCm: number; weightKg: number; primaryLanguage: string }>
 ): Promise<PatientRecord> {
   const res = await apiPatch<ApiResponse<PatientRecord>>(`/patients/${id}`, data);
+  return res.data;
+}
+
+export async function getPatientTimeline(id: string): Promise<TimelineEvent[]> {
+  const res = await apiGet<ApiResponse<TimelineEvent[]>>(`/patients/${id}/timeline`);
+  return res.data ?? [];
+}
+
+export async function createPatient(data: {
+  userId: string;
+  dateOfBirth: string;
+  organizationId?: string;
+}): Promise<PatientRecord> {
+  const res = await apiPost<ApiResponse<PatientRecord>>('/patients', data);
   return res.data;
 }
