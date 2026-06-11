@@ -41,28 +41,47 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({ onClose, onSuc
     setError(null);
     setLoading(true);
     try {
-      // 1. Register the patient user account
-      const user = await register({
-        email: form.email,
-        password: form.password,
-        fullName: form.fullName,
-        role: 'patient',
-        country: form.country || undefined,
-        gender: form.gender,
-        dateOfBirth: form.dateOfBirth || undefined,
-      }, false);
+      let patientIdToUse: string | null = null;
+      try {
+        // 1. Try to register the patient user account
+        const user = await register({
+          email: form.email,
+          password: form.password,
+          fullName: form.fullName,
+          role: 'patient',
+          country: form.country || undefined,
+          gender: form.gender,
+          dateOfBirth: form.dateOfBirth || undefined,
+        }, false);
+
+        // Fetch the new patient record
+        const { listPatients } = await import('../api/patients');
+        const patients = await listPatients(50);
+        const newPatient = patients.find((p) => p.userId === user.id);
+        if (!newPatient) throw new Error('Patient record not created yet. Please try again.');
+        patientIdToUse = newPatient.id;
+
+      } catch (err: any) {
+        // If the email is already registered, find the existing patient
+        if (err.message === 'Email already registered' || err.message?.includes('already')) {
+           const { listPatients } = await import('../api/patients');
+           const searchPatients = await listPatients(50, form.email);
+           const existingPatient = searchPatients.find(p => p.user.email === form.email);
+           
+           if (!existingPatient) {
+             throw new Error('Email is registered, but no patient record was found. Please use a different email.');
+           }
+           patientIdToUse = existingPatient.id;
+        } else {
+           throw err;
+        }
+      }
+
+      if (!patientIdToUse) throw new Error('Failed to identify patient record.');
 
       // 2. Open a new case for this patient
-      // The backend auto-creates a patient record on register with role=patient
-      // We need the patient ID — fetch it
-      const { listPatients } = await import('../api/patients');
-      const patients = await listPatients(50);
-      const newPatient = patients.find((p) => p.userId === user.id);
-
-      if (!newPatient) throw new Error('Patient record not created yet. Please try again.');
-
       const newCase = await createCase({
-        patientId: newPatient.id,
+        patientId: patientIdToUse,
         title: form.caseTitle || `New case for ${form.fullName}`,
         description: form.caseDescription || undefined,
         priority: form.priority,
