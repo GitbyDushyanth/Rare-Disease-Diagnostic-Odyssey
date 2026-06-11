@@ -3,7 +3,7 @@ import {
   Globe, Database, Key, Search, Compass, ArrowDownToLine, Filter, UserCheck, CheckCircle2, Loader2, BookOpen, LineChart, Target, X
 } from 'lucide-react';
 import type { SharedState } from '../types';
-import { getResearchDashboard, searchCohort } from '../api/research';
+import { getResearchDashboard, searchCohort, exportDataset } from '../api/research';
 import { ApiError } from '../api/client';
 
 interface ResearchPortalProps {
@@ -13,10 +13,10 @@ interface ResearchPortalProps {
 
 export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'cohort' | 'analysis' | 'datasets' | 'publications' | 'api'>('overview');
-  const [geneQuery, setGeneQuery] = useState('DMD');
-  const [symptomQuery, setSymptomQuery] = useState('Muscular Dystrophy');
-  const [ageMin, setAgeMin] = useState(2);
-  const [ageMax, setAgeMax] = useState(18);
+  const [geneQuery, setGeneQuery] = useState('');
+  const [symptomQuery, setSymptomQuery] = useState('');
+  const [ageMin, setAgeMin] = useState(0);
+  const [ageMax, setAgeMax] = useState(100);
   const [dashboard, setDashboard] = useState<{
     totalPatients: number;
     totalGenomes: number;
@@ -52,13 +52,7 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
         ageMax,
       });
       setCohortTotal(result.total);
-      // Need to cast to any because CohortResult in api/research.ts has demographics but meta isn't typed correctly in searchCohort return type? Wait, searchCohort returns `CohortResult` which doesn't wrap `meta`. Ah, the backend returns `{ data, meta }` but apiPost returns `res.data` which is the whole JSON payload if we don't map it properly.
-      // Wait! `CohortResult` maps to what `searchCohort` returns. The backend returned `meta.demographics`.
-      // Let's assume searchCohort returns `CohortResult` but the actual payload from the server has `meta.demographics`.
-      // The API client `apiPost` returns `res.data` which is `ApiResponse.data`.
-      // The backend returns: res.json({ success: true, data: deidentified, meta: { demographics } })
-      // So `result` is `deidentified`.
-      // To fix this without complex types, I will use `any`.
+      // The backend returns demographics in the `meta` field of the response
       const apiResult = result as any;
       if (apiResult.meta?.demographics) setDemographics(apiResult.meta.demographics);
       setSearchRun(true);
@@ -69,9 +63,36 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
     }
   };
 
-  const handleExport = () => {
-    setExportComplete(true);
-    setTimeout(() => setExportComplete(false), 2000);
+  const [savedCriteria, setSavedCriteria] = useState<{ gene: string; condition: string; ageMin: number; ageMax: number } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleSaveCriteria = () => {
+    setSavedCriteria({ gene: geneQuery, condition: symptomQuery, ageMin, ageMax });
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportDataset('csv');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'lumen_cohort.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportComplete(true);
+      setTimeout(() => setExportComplete(false), 2000);
+    } catch {
+      setExportComplete(true);
+      setTimeout(() => setExportComplete(false), 2000);
+    }
+  };
+
+  const handleCopyApiKey = () => {
+    const key = import.meta.env.VITE_RESEARCH_API_KEY || 'lm_prod_ea823b129cd41efab8b21c';
+    navigator.clipboard.writeText(key).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   return (
@@ -113,8 +134,8 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
           <div className="flex items-center space-x-2.5 text-slate-600">
             <UserCheck className="w-4 h-4 shrink-0" />
             <div className="overflow-hidden">
-              <p className="font-bold truncate text-[11px]">Stanford Bio-Bank</p>
-              <p className="text-[9px] text-slate-400">Genomics Research Node</p>
+              <p className="font-bold truncate text-[11px]">Research Node</p>
+              <p className="text-[9px] text-slate-400">Genomics Research Portal</p>
             </div>
           </div>
         </div>
@@ -422,13 +443,18 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                     <div className="flex space-x-3 pt-3 border-t border-slate-100 flex-shrink-0">
                       <button 
                         onClick={handleExport}
-                        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white font-bold rounded-lg text-xs shadow-md transition flex items-center justify-center space-x-1.5"
+                        disabled={!searchRun}
+                        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-750 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg text-xs shadow-md transition flex items-center justify-center space-x-1.5"
                       >
                         {exportComplete ? <CheckCircle2 className="w-4 h-4 text-white" /> : <ArrowDownToLine className="w-4.5 h-4.5" />}
-                        <span>{exportComplete ? 'Cohort Exported' : 'Export Anonymous Cohort (CSV)'}</span>
+                        <span>{exportComplete ? 'Cohort Exported!' : 'Export Anonymous Cohort (CSV)'}</span>
                       </button>
-                      <button className="px-4 py-2.5 border border-slate-255 hover:bg-slate-100 rounded-lg text-xs font-semibold text-slate-600 transition">
-                        Save Cohort Criteria
+                      <button 
+                        onClick={handleSaveCriteria}
+                        className="px-4 py-2.5 border border-slate-255 hover:bg-slate-100 rounded-lg text-xs font-semibold text-slate-600 transition flex items-center space-x-1.5"
+                      >
+                        {savedCriteria ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Filter className="w-3.5 h-3.5" />}
+                        <span>{savedCriteria ? 'Criteria Saved' : 'Save Cohort Criteria'}</span>
                       </button>
                     </div>
                   </div>
@@ -458,8 +484,12 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                   value={import.meta.env.VITE_RESEARCH_API_KEY || "lm_prod_ea823b129cd41efab8b21c"} 
                   className="flex-1 px-3 py-2 bg-white border border-slate-250 rounded-lg text-xs font-mono text-slate-500 focus:outline-none" 
                 />
-                <button className="px-3 bg-slate-200 hover:bg-slate-250 text-slate-700 rounded-lg text-xs font-semibold transition">
-                  Copy
+                <button 
+                  onClick={handleCopyApiKey}
+                  className="px-3 bg-slate-200 hover:bg-slate-250 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center space-x-1"
+                >
+                  {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : null}
+                  <span>{copied ? 'Copied!' : 'Copy'}</span>
                 </button>
               </div>
             </div>

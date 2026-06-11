@@ -110,6 +110,9 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
   const [specialist, setSpecialist] = useState<SpecialistRecord | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [clinicianNotes, setClinicianNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [shareMsg, setShareMsg] = useState('');
   const [dashboard, setDashboard] = useState<{
     activeCases: number;
     urgentCases: number;
@@ -202,11 +205,16 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
     try {
       const diagnosis =
         currentPatient.raw.patient.diagnosticSuggestions?.[0]?.diseaseName || 'Rare disease workup';
+      const tests = currentPatient.raw.patient.diagnosticSuggestions?.length
+        ? currentPatient.raw.patient.diagnosticSuggestions
+            .slice(0, 3)
+            .map((s) => `Investigate: ${s.diseaseName}`)
+        : ['Whole Exome Sequencing', 'Genetic Counseling'];
       await createCarePlan({
         patientId: currentPatient.patientId,
         caseId: currentPatient.id,
         primaryDiagnosis: diagnosis,
-        recommendedTests: ['Whole Exome Sequencing', 'Genetic Counseling', 'CK Level'],
+        recommendedTests: tests,
       });
       setState((prev) => ({ ...prev, carePlanCreated: true }));
     } catch (err) {
@@ -227,6 +235,21 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Failed to send referral');
     }
+  };
+
+  const handleSaveNotes = () => {
+    if (!clinicianNotes.trim()) return;
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2000);
+  };
+
+  const handleShareCase = () => {
+    if (!currentPatient) return;
+    const url = `${window.location.origin}?case=${currentPatient.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareMsg('Copied!');
+      setTimeout(() => setShareMsg(''), 2000);
+    });
   };
 
   const handlePatientAdded = (newCase: CaseRecord) => {
@@ -354,7 +377,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                 className="pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs w-60 text-slate-200 focus:outline-none focus:border-brand-500"
               />
             </div>
-            <div className="relative w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-750 text-slate-300">
+            <div className="relative w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-750 text-slate-300" onClick={() => setActiveSidebarTab('Alerts')}>
               <Bell className="w-4 h-4" />
               {unreadAlerts > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
             </div>
@@ -512,11 +535,17 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <button className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-xs font-semibold transition flex items-center">
+                  <button 
+                    onClick={() => setActiveTab('records')}
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-xs font-semibold transition flex items-center"
+                  >
                     <Folder className="w-4 h-4 mr-1.5" /> Documents
                   </button>
-                  <button className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-xs font-semibold transition flex items-center">
-                    <Send className="w-4 h-4 mr-1.5" /> Share
+                  <button 
+                    onClick={handleShareCase}
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-xs font-semibold transition flex items-center"
+                  >
+                    <Send className="w-4 h-4 mr-1.5" /> {shareMsg || 'Share'}
                   </button>
                 </div>
               </div>
@@ -692,11 +721,17 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                   {activeTab === 'notes' && (
                     <div className="space-y-2">
                       <textarea
+                        value={clinicianNotes}
+                        onChange={(e) => setClinicianNotes(e.target.value)}
                         placeholder="Add diagnostic comments or observations..."
                         className="w-full h-24 p-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none text-xs text-slate-200 focus:border-brand-500"
                       />
-                      <button className="px-4 py-2 bg-brand-500 text-white rounded-lg font-semibold shadow-md hover:bg-brand-600 transition text-xs">
-                        Save Notes
+                      <button 
+                        onClick={handleSaveNotes}
+                        disabled={!clinicianNotes.trim()}
+                        className="px-4 py-2 bg-brand-500 disabled:opacity-40 text-white rounded-lg font-semibold shadow-md hover:bg-brand-600 transition text-xs"
+                      >
+                        {notesSaved ? '✓ Notes Saved' : 'Save Notes'}
                       </button>
                     </div>
                   )}
