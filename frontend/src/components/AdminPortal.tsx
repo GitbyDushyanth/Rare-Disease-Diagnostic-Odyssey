@@ -4,7 +4,7 @@ import {
   Search, CheckCircle2, Activity, AlertTriangle, Loader2, Users, Key, CreditCard, Globe
 } from 'lucide-react';
 import type { SharedState } from '../types';
-import { getAdminDashboard, getComplianceReport } from '../api/admin';
+import { getAdminDashboard, getComplianceReport, getPlatformAnalytics, type PlatformAnalytics } from '../api/admin';
 import { ApiError } from '../api/client';
 
 interface AdminPortalProps {
@@ -19,22 +19,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
     totalPatients: number;
     totalClinicians: number;
     totalHospitals: number;
+    apiCallsPerMin: number;
     uptime: number;
   } | null>(null);
+  const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [auditProgress, setAuditProgress] = useState(false);
   const [auditComplete, setAuditComplete] = useState(false);
 
   useEffect(() => {
-    getAdminDashboard()
-      .then((data) => {
+    Promise.all([getAdminDashboard(), getPlatformAnalytics()])
+      .then(([data, platformData]) => {
         setStats({
           totalPatients: data.stats.totalPatients,
           totalClinicians: data.stats.totalClinicians,
           totalHospitals: data.stats.totalHospitals,
+          apiCallsPerMin: data.stats.apiCallsPerMin,
           uptime: data.stats.platformHealth.uptime,
         });
+        setAnalytics(platformData);
         setState((prev) => ({
           ...prev,
           auditLogs: data.recentAuditLogs.map((log) => ({
@@ -145,7 +149,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
               {[
                 { label: 'Total Users', val: String(stats?.totalClinicians ? stats.totalClinicians + stats.totalPatients : '—'), status: 'Registered accounts', icon: Users, color: 'border-blue-100 bg-blue-50/20 text-blue-600' },
                 { label: 'Active Nodes', val: String(stats?.totalHospitals ?? '—'), status: 'Federated hospital nodes', icon: Server, color: 'border-indigo-100 bg-indigo-50/20 text-indigo-600' },
-                { label: 'API Calls / Min', val: '4,281', status: 'Slightly elevated', icon: Activity, color: 'border-pink-100 bg-pink-50/20 text-pink-600' },
+                { label: 'API Calls / Min', val: String(stats?.apiCallsPerMin ?? '—'), status: 'Recent requests', icon: Activity, color: 'border-pink-100 bg-pink-50/20 text-pink-600' },
                 { label: 'System Uptime SLA', val: `${stats?.uptime ?? 99.95}%`, status: 'Platform health metric', icon: HardDrive, color: 'border-emerald-100 bg-emerald-50/20 text-emerald-600' }
               ].map((stat, idx) => (
                 <div key={idx} className="p-4 border border-slate-250 bg-white rounded-xl shadow-xs flex items-center justify-between">
@@ -173,9 +177,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
 
                 <div className="space-y-4">
                   {[
-                    { label: 'Phenotype Map Completeness', val: 92, status: '92% (High Coverage)', color: 'bg-pink-600' },
-                    { label: 'ClinVar Verification Accuracy', val: 96, status: '96% (ACMG Standard)', color: 'bg-emerald-500' },
-                    { label: 'Cross-Hospital Log Consistency', val: 91, status: '91% (Synced Node Hub)', color: 'bg-blue-500' }
+                    { label: 'Phenotype Map Completeness', val: analytics?.dataQuality.completeness ?? 0, status: `${analytics?.dataQuality.completeness ?? 0}% (High Coverage)`, color: 'bg-pink-600' },
+                    { label: 'ClinVar Verification Accuracy', val: analytics?.dataQuality.accuracy ?? 0, status: `${analytics?.dataQuality.accuracy ?? 0}% (ACMG Standard)`, color: 'bg-emerald-500' },
+                    { label: 'Cross-Hospital Log Consistency', val: analytics?.dataQuality.consistency ?? 0, status: `${analytics?.dataQuality.consistency ?? 0}% (Synced Node Hub)`, color: 'bg-blue-500' }
                   ].map((gauge, idx) => (
                     <div key={idx} className="space-y-1.5">
                       <div className="flex justify-between text-xs font-semibold text-slate-700">

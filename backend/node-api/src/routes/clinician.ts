@@ -15,7 +15,7 @@ router.use(requireAuth, requireRole(['clinician', 'admin']));
 // ── GET /api/v1/clinician/dashboard ──────────────────────────────────────────
 router.get('/dashboard', async (_req, res, next) => {
   try {
-    const [activeCases, urgentCases, recentSuggestions, pendingInterpretations] =
+    const [activeCases, urgentCases, recentSuggestions, pendingInterpretations, closedCases] =
       await Promise.all([
         prisma.case.count({ where: { status: { in: ['open', 'in_progress'] } } }),
         prisma.case.count({ where: { priority: 'urgent', status: { not: 'closed' } } }),
@@ -26,7 +26,14 @@ router.get('/dashboard', async (_req, res, next) => {
           include: { patient: { include: { user: { select: { fullName: true } } } } },
         }),
         prisma.variantInterpretation.count({ where: { reviewStatus: 'pending' } }),
+        prisma.case.findMany({ where: { status: 'closed', closedAt: { not: null } }, select: { createdAt: true, closedAt: true } })
       ]);
+
+    let avgResolutionDays = 0;
+    if (closedCases.length > 0) {
+      const totalTimeMs = closedCases.reduce((acc, c) => acc + (new Date(c.closedAt!).getTime() - new Date(c.createdAt).getTime()), 0);
+      avgResolutionDays = Math.round(totalTimeMs / closedCases.length / (1000 * 60 * 60 * 24));
+    }
 
     res.json({
       success: true,
@@ -35,7 +42,7 @@ router.get('/dashboard', async (_req, res, next) => {
           activeCases,
           urgentCases,
           pendingInterpretations,
-          avgResolutionDays: 12,
+          avgResolutionDays,
         },
         recentSuggestions,
       },
