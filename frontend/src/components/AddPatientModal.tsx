@@ -61,15 +61,19 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({ onClose, onSuc
         if (!newPatient) throw new Error('Patient record not created yet. Please try again.');
         patientIdToUse = newPatient.id;
 
-      } catch (err: any) {
+      } catch (err) {
         // If the email is already registered, find the existing patient
-        if (err.message === 'Email already registered' || err.message?.includes('already')) {
+        const message = err instanceof Error ? err.message : '';
+        if (message === 'Email already registered' || message.includes('already')) {
            const { listPatients } = await import('../api/patients');
            const searchPatients = await listPatients(50, form.email);
            const existingPatient = searchPatients.find(p => p.user.email === form.email);
            
            if (!existingPatient) {
-             throw new Error('Email is registered, but no patient record was found. Please use a different email.');
+             throw new Error(
+               'Email is registered, but no patient record was found. Please use a different email.',
+               { cause: err }
+             );
            }
            patientIdToUse = existingPatient.id;
         } else {
