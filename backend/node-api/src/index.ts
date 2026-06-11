@@ -22,10 +22,12 @@ import notificationsRouter from './routes/notifications';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import logger from './lib/logger';
 import prisma from './lib/prisma';
+import aiClient from './services/aiClient';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
 const API_BASE = `/api/${process.env.API_VERSION || 'v1'}`;
+const PUBLIC_API_URL = process.env.PUBLIC_API_URL || `http://localhost:${PORT}`;
 
 // ── Security middleware ────────────────────────────────────────────────────────
 app.use(helmet({
@@ -34,7 +36,10 @@ app.use(helmet({
 
 app.use(cors({
   origin: (origin, cb) => {
-    const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,https://rare-disease-diagnostic-odyssey.vercel.app').split(',');
+    const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,https://rare-disease-diagnostic-odyssey.vercel.app')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
     if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       cb(null, true);
     } else {
@@ -74,6 +79,7 @@ app.use('/uploads', express.static(path.resolve(process.env.UPLOAD_DIR || './upl
 app.get('/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
+    const ai = await aiClient.healthCheck();
     res.json({
       success: true,
       status: 'healthy',
@@ -81,7 +87,11 @@ app.get('/health', async (_req, res) => {
       environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      services: { database: 'ok', api: 'ok' },
+      services: {
+        database: 'ok',
+        api: 'ok',
+        ai: ai.status === 'unavailable' ? 'unavailable' : 'ok',
+      },
     });
   } catch {
     res.status(503).json({ success: false, status: 'unhealthy', services: { database: 'error' } });
@@ -136,10 +146,10 @@ async function bootstrap() {
     logger.info('Database connected successfully');
 
     app.listen(PORT, () => {
-      logger.info(`🚀 LUMEN API running on http://localhost:${PORT}`);
-      logger.info(`📋 API base: http://localhost:${PORT}${API_BASE}`);
-      logger.info(`❤️  Health: http://localhost:${PORT}/health`);
-      logger.info(`🧬 Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`LUMEN API running on ${PUBLIC_API_URL}`);
+      logger.info(`API base: ${PUBLIC_API_URL}${API_BASE}`);
+      logger.info(`Health: ${PUBLIC_API_URL}/health`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {
     logger.error('Failed to start server', { err });

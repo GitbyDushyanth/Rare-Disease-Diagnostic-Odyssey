@@ -5,6 +5,107 @@ import { HpoTerm, DiseaseMatch, VariantPriority, TrialMatchResult, DocumentSumma
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 const TIMEOUT = parseInt(process.env.AI_SERVICE_TIMEOUT_MS || '30000');
 
+type AiHpoTerm = HpoTerm & {
+  evidence_text?: string;
+};
+
+type AiDiseaseMatch = {
+  disease_id?: string;
+  diseaseId?: string;
+  disease_name?: string;
+  diseaseName?: string;
+  confidence?: number;
+  rank?: number;
+  hpo_overlap?: string[];
+  hpoOverlap?: string[];
+  gene_associations?: string[];
+  geneAssociations?: string[];
+  inheritance_pattern?: string;
+  inheritancePattern?: string;
+  prevalence?: string;
+  explanation?: string;
+};
+
+type AiTrialMatch = {
+  nct_id?: string;
+  nctId?: string;
+  title?: string;
+  phase?: string;
+  sponsor?: string;
+  status?: string;
+  match_score?: number;
+  matchScore?: number;
+  match_reason?: string[];
+  matchReason?: string[];
+  locations?: string[];
+  contact_email?: string;
+  contactEmail?: string;
+};
+
+type AiDocumentSummary = {
+  timeline?: DocumentSummary['timeline'];
+  key_findings?: string[];
+  keyFindings?: string[];
+  hpo_terms?: AiHpoTerm[];
+  hpoTerms?: AiHpoTerm[];
+  medications?: string[];
+  diagnoses?: string[];
+  recommended_tests?: string[];
+  recommendedTests?: string[];
+  summary?: string;
+};
+
+const emptyDocumentSummary = (summary = ''): DocumentSummary => ({
+  timeline: [],
+  keyFindings: [],
+  hpoTerms: [],
+  medications: [],
+  diagnoses: [],
+  recommendedTests: [],
+  summary,
+});
+
+function normalizeDiseaseMatch(match: AiDiseaseMatch, index: number): DiseaseMatch {
+  return {
+    diseaseId: match.diseaseId || match.disease_id || '',
+    diseaseName: match.diseaseName || match.disease_name || 'Unknown Disease',
+    confidence: match.confidence ?? 0,
+    rank: match.rank ?? index + 1,
+    hpoOverlap: match.hpoOverlap || match.hpo_overlap || [],
+    geneAssociations: match.geneAssociations || match.gene_associations || [],
+    inheritancePattern: match.inheritancePattern || match.inheritance_pattern,
+    prevalence: match.prevalence,
+    explanation: match.explanation,
+  };
+}
+
+function normalizeTrialMatch(match: AiTrialMatch): TrialMatchResult {
+  return {
+    nctId: match.nctId || match.nct_id || '',
+    title: match.title || 'Unknown Trial',
+    phase: match.phase || 'N/A',
+    sponsor: match.sponsor || 'Unknown',
+    status: match.status || 'Recruiting',
+    matchScore: match.matchScore ?? match.match_score ?? 0,
+    matchReason: match.matchReason || match.match_reason || [],
+    locations: match.locations || [],
+    contactEmail: match.contactEmail || match.contact_email,
+  };
+}
+
+function normalizeDocumentSummary(summary?: AiDocumentSummary): DocumentSummary {
+  if (!summary) return emptyDocumentSummary();
+  return {
+    timeline: summary.timeline || [],
+    keyFindings: summary.keyFindings || summary.key_findings || [],
+    hpoTerms: summary.hpoTerms || summary.hpo_terms || [],
+    medications: summary.medications || [],
+    diagnoses: summary.diagnoses || [],
+    recommendedTests: summary.recommendedTests || summary.recommended_tests || [],
+    summary: summary.summary || '',
+  };
+}
+
 class AiClient {
   private client: AxiosInstance;
 
@@ -48,7 +149,7 @@ class AiClient {
   async rankDiseases(hpoTerms: string[]): Promise<DiseaseMatch[]> {
     try {
       const { data } = await this.client.post('/ai/disease/rank', { hpo_terms: hpoTerms });
-      return data.matches || [];
+      return (data.matches || []).map(normalizeDiseaseMatch);
     } catch (err) {
       logger.warn('Disease ranking failed', { err });
       return [];
@@ -95,10 +196,10 @@ class AiClient {
         file_path: filePath,
         document_id: documentId,
       });
-      return data.summary || { timeline: [], keyFindings: [], hpoTerms: [], medications: [], diagnoses: [], recommendedTests: [], summary: '' };
+      return normalizeDocumentSummary(data.summary);
     } catch (err) {
       logger.warn('Document summarization failed', { err });
-      return { timeline: [], keyFindings: [], hpoTerms: [], medications: [], diagnoses: [], recommendedTests: [], summary: 'Extraction failed. Please retry.' };
+      return emptyDocumentSummary('Extraction failed. Please retry.');
     }
   }
 
@@ -116,7 +217,7 @@ class AiClient {
         age: payload.age,
         conditions: payload.conditions,
       });
-      return data.matches || [];
+      return (data.matches || []).map(normalizeTrialMatch);
     } catch (err) {
       logger.warn('Trial matching failed', { err });
       return [];

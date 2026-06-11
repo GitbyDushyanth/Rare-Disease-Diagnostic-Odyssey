@@ -28,6 +28,8 @@ const RESEARCH_NAV_ITEMS: Array<{ id: ResearchTab; label: string; icon: React.El
   { id: 'api', label: 'API Access', icon: Key },
 ];
 
+const RESEARCH_API_KEY = import.meta.env.VITE_RESEARCH_API_KEY || 'lm_demo_replace_with_real_key';
+
 export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
   const [activeTab, setActiveTab] = useState<ResearchTab>('overview');
   const [geneQuery, setGeneQuery] = useState('');
@@ -96,8 +98,7 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
   };
 
   const handleCopyApiKey = () => {
-    const key = import.meta.env.VITE_RESEARCH_API_KEY || 'lm_prod_ea823b129cd41efab8b21c';
-    navigator.clipboard.writeText(key).then(() => {
+    navigator.clipboard.writeText(RESEARCH_API_KEY).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -482,7 +483,7 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                 <input 
                   type="text" 
                   readOnly 
-                  value={import.meta.env.VITE_RESEARCH_API_KEY || "lm_prod_ea823b129cd41efab8b21c"} 
+                  value={RESEARCH_API_KEY} 
                   className="flex-1 px-3 py-2 bg-white border border-slate-250 rounded-lg text-xs font-mono text-slate-500 focus:outline-none" 
                 />
                 <button 
