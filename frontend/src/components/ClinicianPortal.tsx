@@ -11,7 +11,6 @@ import {
   getCases,
   getClinicianDashboard,
   getSpecialists,
-  referCase,
   type CaseRecord,
   type SpecialistRecord,
 } from '../api/clinician';
@@ -130,7 +129,6 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
   const [clinicianSearch, setClinicianSearch] = useState('');
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
-  const [specialist, setSpecialist] = useState<SpecialistRecord | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [clinicianNotes, setClinicianNotes] = useState('');
@@ -155,7 +153,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
     (async () => {
       setLoading(true);
       try {
-        const [dash, caseList, notifs, specialists] = await Promise.all([
+        const [dash, caseList, notifs] = await Promise.all([
           getClinicianDashboard(),
           getCases(),
           getNotifications(),
@@ -165,7 +163,6 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
         setDashboard(dash.stats);
         setCases(caseList);
         setNotifications(notifs.data);
-        setSpecialist(specialists[0] ?? null);
         if (caseList.length > 0) {
           setSelectedCaseId(caseList[0].id);
           onCaseSelect?.(caseList[0].patient);
