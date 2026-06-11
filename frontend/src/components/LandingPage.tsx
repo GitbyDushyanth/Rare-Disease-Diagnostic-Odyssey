@@ -68,22 +68,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               Sign In to Workstation
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-full border border-white/10 transition backdrop-blur-sm active:scale-95">
-              Request Demo
+            <button 
+              onClick={() => document.getElementById('platform')?.scrollIntoView({ behavior: 'smooth' })}
+              className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-full border border-white/10 transition backdrop-blur-sm active:scale-95"
+            >
+              Learn More
             </button>
           </div>
         </div>
 
-        {/* Dashboard Preview Mock */}
+        {/* Dashboard Preview — styled mock instead of external image */}
         <div className="mt-20 max-w-6xl mx-auto px-6 relative">
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 pointer-events-none" />
-          <div className="rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-md p-2 shadow-2xl relative overflow-hidden">
+          <div className="rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md p-6 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
-            <img 
-              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=2000" 
-              alt="Platform Preview" 
-              className="w-full rounded-xl opacity-80"
-            />
+            {/* Mock dashboard preview */}
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {['Active Cases', 'Urgent Cases', 'Avg. Resolution', 'Pending Reviews'].map((label, i) => (
+                <div key={i} className="bg-slate-800/70 rounded-xl p-3 border border-white/5">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">{label}</p>
+                  <div className="h-4 w-12 bg-slate-700 rounded mt-2 animate-pulse" />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-1 bg-slate-800/70 rounded-xl p-3 border border-white/5 space-y-2">
+                <p className="text-[10px] text-slate-500 uppercase font-bold">Patient Queue</p>
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-2">
+                    <div className="w-6 h-6 rounded-full bg-brand-500/20 border border-brand-500/30" />
+                    <div className="flex-1 h-2 bg-slate-700 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+              <div className="col-span-2 bg-slate-800/70 rounded-xl p-3 border border-white/5">
+                <p className="text-[10px] text-slate-500 uppercase font-bold mb-3">AI Differential Diagnosis</p>
+                {[85, 62, 41].map((pct, i) => (
+                  <div key={i} className="mb-2">
+                    <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-brand-500/70 rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </main>

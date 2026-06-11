@@ -112,8 +112,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
           <div className="flex items-center space-x-2.5 text-pink-700">
             <ShieldCheck className="w-4.5 h-4.5 shrink-0" />
             <div className="overflow-hidden">
-              <p className="font-bold truncate text-[10px]">Super Admin Root</p>
-              <p className="text-[9px] text-pink-500 font-medium">Compliance Node Active</p>
+              <p className="font-bold truncate text-[10px]">Admin Console</p>
+              <p className="text-[9px] text-pink-500 font-medium">SOC2 Compliance Active</p>
             </div>
           </div>
         </div>
@@ -328,8 +328,30 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
           </div>
         )}
 
-        {/* Empty states for new tabs */}
-        {!loading && ['users', 'roles', 'billing'].includes(activeTab) && (
+        {/* Users view */}
+        {!loading && activeTab === 'users' && (
+          <div className="bg-white border border-slate-200 rounded-xl p-5 mt-5 animate-fade-in space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-display font-bold text-slate-850 text-sm">Registered Users</h3>
+              <span className="text-xs text-slate-500">{(stats?.totalClinicians ?? 0) + (stats?.totalPatients ?? 0)} total accounts</span>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'Clinicians', val: stats?.totalClinicians ?? '—', color: 'text-blue-600 bg-blue-50 border-blue-100' },
+                { label: 'Patients', val: stats?.totalPatients ?? '—', color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
+                { label: 'Hospitals', val: stats?.totalHospitals ?? '—', color: 'text-pink-600 bg-pink-50 border-pink-100' },
+              ].map((item, idx) => (
+                <div key={idx} className={`p-4 rounded-xl border ${item.color} text-center`}>
+                  <p className="text-2xl font-display font-extrabold">{item.val}</p>
+                  <p className="text-xs font-bold mt-1 opacity-70">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Roles & Billing placeholder */}
+        {!loading && ['roles', 'billing'].includes(activeTab) && (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-400 mt-5">
             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 border border-slate-200 shadow-sm">
               <ShieldCheck className="w-8 h-8 text-pink-400" />
