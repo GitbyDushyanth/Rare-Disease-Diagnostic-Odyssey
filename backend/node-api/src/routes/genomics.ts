@@ -16,7 +16,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 // ── Multer for genomic files ───────────────────────────────────────────────────
-const genomicDir = path.resolve('./uploads/genomics');
+const genomicDir = path.resolve(process.env.GENOMIC_UPLOAD_DIR || './uploads/genomics');
 if (!fs.existsSync(genomicDir)) fs.mkdirSync(genomicDir, { recursive: true });
 
 const genomicStorage = multer.diskStorage({
@@ -26,7 +26,9 @@ const genomicStorage = multer.diskStorage({
 
 const uploadGenomic = multer({
   storage: genomicStorage,
-  limits: { fileSize: 500 * 1024 * 1024 * 1024 }, // 500GB max
+  limits: {
+    fileSize: parseInt(process.env.MAX_GENOMIC_FILE_SIZE_GB || '5') * 1024 * 1024 * 1024,
+  },
 });
 
 // ── Schemas ───────────────────────────────────────────────────────────────────

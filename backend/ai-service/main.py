@@ -1,12 +1,13 @@
 import logging
 import time
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import get_settings
-from routers import hpo_nlp, disease_sim, variant_ai, trial_match, summarizer
+from routers import disease_sim, hpo_nlp, summarizer, trial_match, variant_ai
 
 settings = get_settings()
 
@@ -17,23 +18,37 @@ logging.basicConfig(
 logger = logging.getLogger("lumen.ai")
 
 
+def fallback_mode_enabled() -> bool:
+    return settings.ai_fallback_mode and (
+        not settings.openai_api_key
+        or settings.openai_api_key.startswith("sk-your")
+        or settings.openai_api_key.lower() in {"placeholder", "changeme", "your-openai-api-key-here"}
+    )
+
+
+def cors_origins() -> list[str]:
+    return [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🧬 LUMEN AI Service starting up...")
+    logger.info("LUMEN AI Service starting up...")
     logger.info(f"   Model: {settings.openai_model}")
     logger.info(f"   Environment: {settings.env}")
-    if not settings.openai_api_key:
-        logger.warning("⚠️  OPENAI_API_KEY is not set — AI endpoints will fail!")
+    if not settings.openai_api_key and fallback_mode_enabled():
+        logger.warning("OPENAI_API_KEY is not set; AI fallback mode is enabled.")
+    elif not settings.openai_api_key:
+        logger.warning("OPENAI_API_KEY is not set; live AI endpoints may fail.")
     yield
-    logger.info("🛑 LUMEN AI Service shutting down...")
+    logger.info("LUMEN AI Service shutting down...")
 
 
 app = FastAPI(
     title="LUMEN AI Intelligence Layer",
     description="""
-## LUMEN Rare Disease AI Platform — AI Microservice
+## LUMEN Rare Disease AI Platform - AI Microservice
 
-Provides 6 specialized AI modules for rare disease diagnostics:
+Provides specialized AI modules for rare disease diagnostics:
 
 | Module | Endpoint | Description |
 |--------|----------|-------------|
@@ -50,26 +65,25 @@ Provides 6 specialized AI modules for rare disease diagnostics:
     lifespan=lifespan,
 )
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001", "http://localhost:5173"],
+    allow_origins=cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ── Request timing middleware ─────────────────────────────────────────────────
+
 @app.middleware("http")
 async def add_timing_header(request: Request, call_next):
     start = time.time()
     response = await call_next(request)
     elapsed = int((time.time() - start) * 1000)
     response.headers["X-Process-Time-Ms"] = str(elapsed)
-    logger.debug(f"{request.method} {request.url.path} → {response.status_code} ({elapsed}ms)")
+    logger.debug(f"{request.method} {request.url.path} -> {response.status_code} ({elapsed}ms)")
     return response
 
-# ── Global exception handler ──────────────────────────────────────────────────
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -78,14 +92,14 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"success": False, "error": str(exc), "path": str(request.url.path)},
     )
 
-# ── Mount routers ─────────────────────────────────────────────────────────────
+
 app.include_router(hpo_nlp.router)
 app.include_router(disease_sim.router)
 app.include_router(variant_ai.router)
 app.include_router(trial_match.router)
 app.include_router(summarizer.router)
 
-# ── Health & info endpoints ───────────────────────────────────────────────────
+
 @app.get("/health", tags=["System"])
 async def health_check():
     return {
@@ -94,12 +108,18 @@ async def health_check():
         "version": "1.0.0",
         "model": settings.openai_model,
         "environment": settings.env,
+        "fallback_mode": fallback_mode_enabled(),
         "modules": [
-            "hpo_nlp", "disease_similarity", "variant_prioritization",
-            "progression_prediction", "record_summarizer", "trial_matching",
+            "hpo_nlp",
+            "disease_similarity",
+            "variant_prioritization",
+            "progression_prediction",
+            "record_summarizer",
+            "trial_matching",
             "drug_discovery",
         ],
     }
+
 
 @app.get("/", tags=["System"])
 async def root():
@@ -118,8 +138,10 @@ async def root():
         },
     }
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host=settings.host,
