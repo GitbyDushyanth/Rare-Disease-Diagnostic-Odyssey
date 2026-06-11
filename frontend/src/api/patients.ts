@@ -41,8 +41,11 @@ export async function getMyPatient(): Promise<PatientRecord> {
   return res.data;
 }
 
-export async function listPatients(limit = 5): Promise<PatientRecord[]> {
-  const res = await apiGet<ApiResponse<PatientRecord[]>>(`/patients?limit=${limit}`);
+export async function listPatients(limit = 5, search?: string): Promise<PatientRecord[]> {
+  const query = search 
+    ? `?limit=${limit}&search=${encodeURIComponent(search)}` 
+    : `?limit=${limit}`;
+  const res = await apiGet<ApiResponse<PatientRecord[]>>(`/patients${query}`);
   return res.data;
 }
 
