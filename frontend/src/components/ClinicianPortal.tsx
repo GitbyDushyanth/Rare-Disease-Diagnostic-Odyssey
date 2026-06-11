@@ -11,7 +11,9 @@ import {
   getCases,
   getClinicianDashboard,
   getSpecialists,
+  runDifferential,
   type CaseRecord,
+  type DifferentialResult,
   type SpecialistRecord,
 } from '../api/clinician';
 import { getNotifications, type NotificationRecord } from '../api/notifications';
@@ -144,6 +146,8 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showAddPatient, setShowAddPatient] = useState(false);
+  const [aiRunning, setAiRunning] = useState(false);
+  const [aiResult, setAiResult] = useState<DifferentialResult | null>(null);
 
   // Added state to trigger CSS width animations on mount
   const [barsLoaded, setBarsLoaded] = useState(false);
@@ -219,9 +223,74 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
 
   const handleSelectCase = (patient: QueuePatient) => {
     setBarsLoaded(false); // Reset animation state
+    setAiResult(null);
     setSelectedCaseId(patient.id);
     onCaseSelect?.(patient.raw.patient);
     setTimeout(() => setBarsLoaded(true), 50); // Retrigger animation
+  };
+
+  const handleRunDifferential = async () => {
+    if (!currentPatient) return;
+
+    const clinicalText = [
+      currentPatient.symptoms,
+      clinicianNotes,
+      currentPatient.raw.patient.conditions?.map((c) => c.name).join(', ') || '',
+    ].filter(Boolean).join('. ');
+
+    setActionError(null);
+    setAiRunning(true);
+    try {
+      const result = await runDifferential({
+        patientId: currentPatient.patientId,
+        symptoms: clinicalText
+          .split(/[.;,\n]/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .slice(0, 12),
+        clinicalNotes: clinicianNotes || currentPatient.symptoms,
+        age: Number.parseInt(currentPatient.age, 10) || undefined,
+        gender: currentPatient.gender,
+      });
+
+      const diagnosticSuggestions = result.differentialDiagnosis.map((match, index) => ({
+        diseaseName: match.diseaseName,
+        confidenceScore: match.confidence,
+        rank: match.rank ?? index + 1,
+        explanation: match.explanation,
+      }));
+
+      setCases((prev) => prev.map((item) => (
+        item.id === currentPatient.id
+          ? {
+              ...item,
+              aiFlag: diagnosticSuggestions[0]?.confidenceScore > 0.8 ? 'high' : 'medium',
+              patient: {
+                ...item.patient,
+                diagnosticSuggestions,
+              },
+            }
+          : item
+      )));
+
+      setState((prev) => ({
+        ...prev,
+        diagnosticSuggestions,
+        patientProfile: {
+          ...prev.patientProfile,
+          status: diagnosticSuggestions[0]
+            ? `Potential: ${diagnosticSuggestions[0].diseaseName}`
+            : prev.patientProfile.status,
+        },
+      }));
+      setAiResult(result);
+      setBarsLoaded(false);
+      setTimeout(() => setBarsLoaded(true), 50);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'AI differential analysis failed');
+    } finally {
+      setAiRunning(false);
+    }
   };
 
   const handleCreateCarePlan = async () => {
@@ -269,6 +338,12 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
 
   const recommendedActions: string[] = (() => {
     const suggestions = currentPatient?.raw.patient.diagnosticSuggestions ?? [];
+    if (aiResult?.suggestedTests.length) {
+      return [
+        ...(suggestions[0] ? [`Review top match: ${suggestions[0].diseaseName}`] : []),
+        ...aiResult.suggestedTests.slice(0, 4),
+      ];
+    }
     if (suggestions.length === 0) return ['No AI suggestions yet — add symptoms or upload documents'];
     return [
       `Review top match: ${suggestions[0].diseaseName}`,
@@ -537,7 +612,15 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                           <Sparkles className="w-4 h-4 mr-2 text-indigo-400" />
                           Differential Diagnosis Engine
                         </h4>
-                        <span className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-bold uppercase rounded-md">Live Inference</span>
+                        <button
+                          type="button"
+                          onClick={handleRunDifferential}
+                          disabled={aiRunning}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 hover:text-white hover:bg-indigo-500/20 disabled:opacity-60 text-[10px] font-bold uppercase rounded-md transition"
+                        >
+                          {aiRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                          {aiRunning ? 'Running AI' : 'Run AI'}
+                        </button>
                       </div>
 
                       <div className="space-y-4">
@@ -572,10 +655,23 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                         })}
                         {!currentPatient.raw.patient.diagnosticSuggestions?.length && !state.diagnosticSuggestions.length && (
                           <div className="p-4 border border-dashed border-slate-700 rounded-xl text-center text-xs text-slate-500">
-                            Insufficient data. Add symptoms or VCF to run inference.
+                            No AI results yet. Run AI to extract HPO terms and rank rare disease matches.
                           </div>
                         )}
                       </div>
+
+                      {aiResult?.hpoTerms.length ? (
+                        <div className="mt-5 border-t border-slate-800 pt-4">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Extracted HPO Terms</p>
+                          <div className="flex flex-wrap gap-2">
+                            {aiResult.hpoTerms.slice(0, 6).map((term) => (
+                              <span key={term.id} className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold text-cyan-300">
+                                {term.id} {term.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
                     </GlassCard>
 
                     {/* Recommended Actions */}

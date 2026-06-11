@@ -71,7 +71,13 @@ router.get('/cases', async (req, res, next) => {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          patient: { include: { user: { select: { fullName: true, email: true } } } },
+          patient: {
+            include: {
+              user: { select: { fullName: true, email: true, gender: true } },
+              conditions: { where: { status: 'active' } },
+              diagnosticSuggestions: { orderBy: { rank: 'asc' }, take: 5 },
+            },
+          },
           participants: { include: { user: { select: { fullName: true, role: true } } } },
           _count: { select: { messages: true, attachments: true } },
         },
@@ -254,12 +260,30 @@ router.post(
         },
       });
 
+      const diagnosticSuggestions = matches.slice(0, 10).map((m, i) => ({
+        id: uuidv4(),
+        patientId,
+        analysisJobId: job.id,
+        diseaseName: m.diseaseName,
+        diseaseId: m.diseaseId,
+        confidenceScore: m.confidence,
+        rank: i + 1,
+        hpoOverlap: JSON.stringify(m.hpoOverlap),
+        explanation: m.explanation,
+      }));
+
+      if (diagnosticSuggestions.length > 0) {
+        await prisma.diagnosticSuggestion.deleteMany({ where: { patientId } });
+        await prisma.diagnosticSuggestion.createMany({ data: diagnosticSuggestions });
+      }
+
       res.json({
         success: true,
         data: {
           jobId: job.id,
           hpoTerms,
           differentialDiagnosis: matches,
+          diagnosticSuggestions,
           suggestedTests: generateSuggestedTests(matches),
         },
       });

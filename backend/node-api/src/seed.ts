@@ -121,6 +121,150 @@ async function main() {
   });
   console.log(`✅ Researcher: ${researcher.fullName}`);
 
+  const demoPatientHash = await bcrypt.hash('Patient@123', 12);
+  const demoPatientUser = await prisma.user.upsert({
+    where: { email: 'demo.patient@lumen.health' },
+    update: {
+      fullName: 'Aarav Mehta',
+      role: 'patient',
+      status: 'active',
+      dateOfBirth: new Date('2014-05-18'),
+      gender: 'male',
+      country: 'United States',
+    },
+    create: {
+      id: uuidv4(),
+      email: 'demo.patient@lumen.health',
+      passwordHash: demoPatientHash,
+      fullName: 'Aarav Mehta',
+      role: 'patient',
+      status: 'active',
+      dateOfBirth: new Date('2014-05-18'),
+      gender: 'male',
+      country: 'United States',
+      profile: { create: { id: uuidv4(), bio: 'Demo patient for AI diagnostic workflow' } },
+    },
+  });
+
+  const demoPatient = await prisma.patient.upsert({
+    where: { userId: demoPatientUser.id },
+    update: {
+      organizationId: hospital.id,
+      dateOfBirth: new Date('2014-05-18'),
+      heightCm: 139,
+      weightKg: 34,
+    },
+    create: {
+      id: uuidv4(),
+      userId: demoPatientUser.id,
+      organizationId: hospital.id,
+      mrn: 'MRN-DEMO-RARE-001',
+      dateOfBirth: new Date('2014-05-18'),
+      heightCm: 139,
+      weightKg: 34,
+    },
+  });
+
+  const demoCondition = await prisma.condition.findFirst({
+    where: { patientId: demoPatient.id, name: 'Progressive proximal muscle weakness' },
+  });
+  if (!demoCondition) {
+    await prisma.condition.create({
+      data: {
+        id: uuidv4(),
+        patientId: demoPatient.id,
+        icdCode: 'R53.1',
+        name: 'Progressive proximal muscle weakness',
+        status: 'active',
+        onsetDate: new Date('2024-02-01'),
+        notes: 'Difficulty climbing stairs, frequent falls, elevated fatigue after activity.',
+      },
+    });
+  }
+
+  const hpoTerms = [
+    { id: 'HP:0001324', name: 'Muscle weakness', confidence: 0.92, evidence_text: 'progressive proximal weakness' },
+    { id: 'HP:0003701', name: 'Proximal muscle weakness', confidence: 0.88, evidence_text: 'difficulty climbing stairs' },
+    { id: 'HP:0003236', name: 'Elevated circulating creatine kinase concentration', confidence: 0.76, evidence_text: 'elevated CK' },
+  ];
+
+  const existingSymptom = await prisma.symptomEntry.findFirst({
+    where: { patientId: demoPatient.id, notes: { contains: 'progressive proximal weakness' } },
+  });
+  if (!existingSymptom) {
+    await prisma.symptomEntry.create({
+      data: {
+        id: uuidv4(),
+        patientId: demoPatient.id,
+        pain: 3,
+        fatigue: 8,
+        mobility: 6,
+        sleep: 4,
+        mood: 5,
+        notes: 'Patient has progressive proximal weakness, difficulty climbing stairs, frequent falls, fatigue, and elevated CK.',
+        hpoTerms: JSON.stringify(hpoTerms),
+        source: 'clinician',
+      },
+    });
+  }
+
+  await prisma.diagnosticSuggestion.deleteMany({ where: { patientId: demoPatient.id } });
+  await prisma.diagnosticSuggestion.createMany({
+    data: [
+      {
+        id: uuidv4(),
+        patientId: demoPatient.id,
+        diseaseName: 'Duchenne Muscular Dystrophy',
+        diseaseId: 'OMIM:310200',
+        confidenceScore: 0.89,
+        rank: 1,
+        hpoOverlap: JSON.stringify(['HP:0001324', 'HP:0003701', 'HP:0003236']),
+        explanation: 'Seeded AI demo match for neuromuscular phenotype with elevated CK.',
+      },
+      {
+        id: uuidv4(),
+        patientId: demoPatient.id,
+        diseaseName: 'Spinal Muscular Atrophy',
+        diseaseId: 'OMIM:608807',
+        confidenceScore: 0.72,
+        rank: 2,
+        hpoOverlap: JSON.stringify(['HP:0001324', 'HP:0003701']),
+        explanation: 'Seeded AI demo differential with overlapping motor weakness findings.',
+      },
+    ],
+  });
+
+  const existingCase = await prisma.case.findFirst({
+    where: { patientId: demoPatient.id, title: 'AI rare disease workup - neuromuscular phenotype' },
+  });
+  if (!existingCase) {
+    const demoCase = await prisma.case.create({
+      data: {
+        id: uuidv4(),
+        patientId: demoPatient.id,
+        title: 'AI rare disease workup - neuromuscular phenotype',
+        description: 'Progressive proximal weakness, difficulty climbing stairs, frequent falls, fatigue, and elevated CK. Run AI to refresh HPO extraction and differential ranking.',
+        priority: 'urgent',
+        aiFlag: 'high',
+        createdBy: clinician.id,
+        status: 'open',
+        participants: {
+          create: { id: uuidv4(), userId: clinician.id, role: 'owner' },
+        },
+      },
+    });
+    await prisma.caseMessage.create({
+      data: {
+        id: uuidv4(),
+        caseId: demoCase.id,
+        senderId: clinician.id,
+        type: 'ai_suggestion',
+        message: 'AI demo initialized with HPO-backed neuromuscular differential diagnosis.',
+      },
+    });
+  }
+  console.log(`✅ Demo AI case: ${demoPatientUser.fullName}`);
+
   // ── Clinical Trials ───────────────────────────────────────────────────────
   const trialsData = [
     { nctId: 'NCT04680585', title: 'EMBARK: A Global Phase 3 Study of Delandistrogene Moxeparvovec (SRP-9001)', phase: 'Phase 3', sponsor: 'Sarepta Therapeutics', status: 'Recruiting', conditions: JSON.stringify(['Duchenne Muscular Dystrophy']), locations: JSON.stringify(['Boston, MA', 'London, UK', 'Sydney, AU']), targetEnroll: 120, contactEmail: 'trials@sarepta.com' },
