@@ -41,6 +41,30 @@ export interface CaseRecord {
   };
 }
 
+export interface DifferentialDiagnosis {
+  diseaseId: string;
+  diseaseName: string;
+  confidence: number;
+  rank: number;
+  hpoOverlap: string[];
+  explanation?: string;
+}
+
+export interface HpoTerm {
+  id: string;
+  name: string;
+  confidence?: number;
+  evidenceText?: string;
+  evidence_text?: string;
+}
+
+export interface DifferentialResult {
+  jobId: string;
+  hpoTerms: HpoTerm[];
+  differentialDiagnosis: DifferentialDiagnosis[];
+  suggestedTests: string[];
+}
+
 export interface SpecialistRecord {
   id: string;
   specialty?: string;
@@ -105,5 +129,16 @@ export async function createCase(data: {
   };
 
   const res = await apiPost<ApiResponse<CaseRecord>>('/clinician/cases', payload);
+  return res.data;
+}
+
+export async function runDifferential(data: {
+  patientId: string;
+  symptoms: string[];
+  clinicalNotes?: string;
+  age?: number;
+  gender?: string;
+}): Promise<DifferentialResult> {
+  const res = await apiPost<ApiResponse<DifferentialResult>>('/clinician/differential', data);
   return res.data;
 }
