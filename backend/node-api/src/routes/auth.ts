@@ -62,6 +62,10 @@ router.post(
     try {
       const { email, password, fullName, role, phone, country, dateOfBirth, gender } = req.body;
 
+      if (role === 'admin') {
+        throw AppError.forbidden('Cannot self-register as an administrator');
+      }
+
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) throw AppError.conflict('Email already registered');
 

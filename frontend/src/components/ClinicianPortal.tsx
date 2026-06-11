@@ -20,6 +20,7 @@ import { getPatientTimeline, type TimelineEvent } from '../api/patients';
 import { calcAge, formatGender, timeAgo } from '../utils/format';
 import { ApiError } from '../api/client';
 import { AddPatientModal } from './AddPatientModal';
+import { useAuth } from '../context/AuthContext';
 
 interface ClinicianPortalProps {
   state: SharedState;
@@ -102,6 +103,7 @@ function timelineLabel(event: TimelineEvent): { title: string; detail: string } 
 }
 
 export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setState, onCaseSelect }) => {
+  const { user } = useAuth();
   const [selectedCaseId, setSelectedCaseId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'timeline' | 'records' | 'labs' | 'notes'>('timeline');
   const [clinicianSearch, setClinicianSearch] = useState('');
@@ -346,10 +348,10 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
           {/* Logged-in clinician info — initials only, no hardcoded image */}
           <div className="p-3 bg-slate-800/40 rounded-xl border border-slate-800 text-xs">
             <div className="flex items-center space-x-2.5">
-              <InitialsAvatar name={state.patientProfile.name || 'Clinician'} size="sm" />
-              <div>
-                <p className="font-bold text-slate-200">My Account</p>
-                <p className="text-[10px] text-slate-500">Clinician</p>
+              <InitialsAvatar name={user?.fullName || 'Clinician'} size="sm" />
+              <div className="overflow-hidden">
+                <p className="font-bold text-slate-200 truncate">{user?.fullName || 'My Account'}</p>
+                <p className="text-[10px] text-slate-500 capitalize">{user?.role || 'Clinician'}</p>
               </div>
             </div>
           </div>

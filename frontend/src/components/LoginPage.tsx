@@ -1,22 +1,9 @@
 import React, { useState } from 'react';
-import { Activity, Globe, ShieldCheck, Sparkles, Terminal, ArrowLeft } from 'lucide-react';
+import { Activity, Globe, ShieldCheck, Sparkles, Terminal, ArrowLeft, UserPlus, LogIn, Lock, Mail, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import type { UserRole } from '../api/auth';
-
-const DEMO_ACCOUNTS: Array<{
-  role: UserRole;
-  label: string;
-  email: string;
-  password: string;
-  icon: React.ElementType;
-  color: string;
-}> = [
-  { role: 'clinician', label: 'Clinician', email: 'dr.patel@stanford.edu', password: 'Clinician@123', icon: Activity, color: 'border-blue-500/30 bg-blue-500/10 text-blue-300' },
-  { role: 'lab', label: 'Lab', email: 'lab@lumen.health', password: 'Lab@123456', icon: Terminal, color: 'border-purple-500/30 bg-purple-500/10 text-purple-300' },
-  { role: 'researcher', label: 'Researcher', email: 'researcher@lumen.health', password: 'Research@123', icon: Globe, color: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300' },
-  { role: 'admin', label: 'Admin', email: 'admin@lumen.health', password: 'Admin@123456', icon: ShieldCheck, color: 'border-pink-500/30 bg-pink-500/10 text-pink-300' },
-];
+import { register } from '../api/auth';
 
 interface LoginPageProps {
   onBack?: () => void;
@@ -24,8 +11,11 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   const { login } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<UserRole>('clinician');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,27 +24,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, password);
+      if (isSignUp) {
+        await register({ email, password, fullName, role });
+      } else {
+        await login(email, password);
+      }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Login failed. Please try again.');
+      setError(err instanceof ApiError ? err.message : `${isSignUp ? 'Registration' : 'Login'} failed. Please try again.`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const fillDemo = async (account: (typeof DEMO_ACCOUNTS)[number]) => {
-    setEmail(account.email);
-    setPassword(account.password);
-    setError(null);
-    setSubmitting(true);
-    try {
-      await login(account.email, account.password);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Login failed. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const ROLES: Array<{ id: UserRole; label: string; desc: string; icon: React.ElementType; color: string; bg: string }> = [
+    { id: 'clinician', label: 'Clinician', desc: 'Patient management', icon: Activity, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30' },
+    { id: 'lab', label: 'Lab Technician', desc: 'Genomic processing', icon: Terminal, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/30' },
+    { id: 'researcher', label: 'Researcher', desc: 'Cohort analytics', icon: Globe, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/30' },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans relative overflow-hidden">
@@ -101,23 +87,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
               Secure access to the rare disease operating system. Authentication is required to access patient data, genomic sequencing, and cohort analytics.
             </p>
           </div>
-
-          <div className="space-y-3 pt-4 border-t border-white/10">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fast Access (Demo)</p>
-            <div className="flex flex-wrap gap-2">
-              {DEMO_ACCOUNTS.map((account) => (
-                <button
-                  key={account.role}
-                  type="button"
-                  onClick={() => fillDemo(account)}
-                  className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg border text-xs font-bold transition hover:scale-105 active:scale-95 ${account.color} bg-opacity-10 backdrop-blur-sm`}
-                >
-                  <account.icon className="w-3.5 h-3.5" />
-                  <span>{account.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="relative">
@@ -129,14 +98,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
             className="relative bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl space-y-6"
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center space-x-2 text-brand-400">
-                <ShieldCheck className="w-5 h-5" />
-                <span className="text-sm font-bold tracking-wide">Secure Login</span>
+              <div className="flex items-center space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(false)}
+                  className={`flex items-center space-x-1.5 text-sm font-bold tracking-wide transition ${!isSignUp ? 'text-brand-400' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
+                </button>
+                <div className="w-px h-4 bg-slate-700" />
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(true)}
+                  className={`flex items-center space-x-1.5 text-sm font-bold tracking-wide transition ${isSignUp ? 'text-brand-400' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Create Account</span>
+                </button>
               </div>
               <div className="flex space-x-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-700" />
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-700" />
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
+                <span className={`w-1.5 h-1.5 rounded-full ${!isSignUp ? 'bg-brand-500 animate-pulse' : 'bg-slate-700'}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${isSignUp ? 'bg-brand-500 animate-pulse' : 'bg-slate-700'}`} />
               </div>
             </div>
 
@@ -150,18 +133,38 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
             )}
 
             <div className="space-y-4">
+              {isSignUp && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 pl-1">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required={isSignUp}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                      placeholder="Dr. Jane Doe"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 pl-1">
                   Email Address
                 </label>
                 <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoComplete="email"
-                    className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
                     placeholder="you@hospital.org"
                   />
                 </div>
@@ -172,22 +175,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                     Password
                   </label>
-                  <a href="#" className="text-[10px] text-brand-400 hover:text-brand-300 font-medium transition">
-                    Forgot?
-                  </a>
+                  {!isSignUp && (
+                    <a href="#" className="text-[10px] text-brand-400 hover:text-brand-300 font-medium transition">
+                      Forgot?
+                    </a>
+                  )}
                 </div>
                 <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    autoComplete="current-password"
-                    className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
                     placeholder="••••••••"
                   />
                 </div>
               </div>
+
+              {isSignUp && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 pl-1 mt-6 border-t border-white/5 pt-4">
+                    Select Your Role
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ROLES.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setRole(r.id)}
+                        className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition ${
+                          role === r.id
+                            ? `${r.bg} ${r.color} shadow-lg scale-105 z-10`
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'
+                        }`}
+                      >
+                        <r.icon className={`w-5 h-5 mb-2 ${role === r.id ? r.color : 'text-slate-500'}`} />
+                        <span className="text-[10px] font-bold">{r.label}</span>
+                        <span className="text-[8px] mt-0.5 opacity-70 hidden sm:block">{r.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
@@ -199,7 +231,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
                 <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>Authenticate</span>
+                  <span>{isSignUp ? 'Create Account' : 'Authenticate'}</span>
                   <Sparkles className="w-4 h-4 ml-1 opacity-70" />
                 </>
               )}
