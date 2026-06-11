@@ -177,7 +177,7 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [onCaseSelect]);
 
   useEffect(() => {
     if (!state.patientId) return;
@@ -683,9 +683,9 @@ export const ClinicianPortal: React.FC<ClinicianPortalProps> = ({ state, setStat
                          <div className="space-y-6">
                          <div>
                            <p className="font-bold text-white mb-3 flex items-center"><AlertTriangle className="w-4 h-4 mr-2 text-amber-400"/> Active Conditions</p>
-                           {(currentPatient.raw.patient as any).conditions?.length ? (
-                             <div className="flex flex-wrap gap-2">
-                               {(currentPatient.raw.patient as any).conditions!.map((c: any) => (
+                           {currentPatient.raw.patient.conditions?.length ? (
+                              <div className="flex flex-wrap gap-2">
+                                {currentPatient.raw.patient.conditions.map((c) => (
                                  <span key={c.id} className="px-3 py-1.5 bg-slate-800 text-slate-200 rounded-lg text-xs font-semibold flex items-center border border-slate-700 shadow-sm">
                                    {c.icdCode ? <span className="text-amber-400 mr-1.5">{c.icdCode}</span> : ''}{c.name}
                                  </span>

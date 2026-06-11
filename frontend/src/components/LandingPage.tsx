@@ -1,165 +1,202 @@
 import React from 'react';
-import { ArrowRight, Activity, Database, Shield, Dna, Brain, Globe } from 'lucide-react';
+import {
+  ArrowRight,
+  Activity,
+  Database,
+  ShieldCheck,
+  Dna,
+  Brain,
+  Globe2,
+  CheckCircle2,
+  LockKeyhole,
+} from 'lucide-react';
+import heroCommand from '../assets/hero-clinical-command.png';
 
 interface LandingPageProps {
   onGetStarted: () => void;
 }
 
+const METRICS = [
+  { label: 'Avg. diagnostic review', value: '48h' },
+  { label: 'Genomic samples indexed', value: '2.8M' },
+  { label: 'Compliant data nodes', value: '142' },
+];
+
+const WORKSPACES = [
+  {
+    icon: Brain,
+    title: 'Clinical intelligence',
+    desc: 'Transform notes, symptoms, and case history into HPO-mapped diagnostic suggestions.',
+  },
+  {
+    icon: Dna,
+    title: 'Genomics operations',
+    desc: 'Prioritize variants, review ACMG evidence, and publish reports from one workstation.',
+  },
+  {
+    icon: Globe2,
+    title: 'Research network',
+    desc: 'Build de-identified cohorts and export compliant datasets for discovery work.',
+  },
+];
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-brand-500/30 overflow-x-hidden">
-      {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20">
-              <Activity className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-display font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-              LUMEN
+    <div className="min-h-screen bg-white text-slate-950 font-sans selection:bg-brand-100">
+      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <a href="#" className="flex items-center gap-3">
+            <span className="w-9 h-9 bg-slate-950 rounded-lg flex items-center justify-center shadow-sm">
+              <Activity className="w-5 h-5 text-white" />
             </span>
+            <span className="font-display font-extrabold text-xl tracking-tight">LUMEN</span>
+          </a>
+
+          <div className="hidden md:flex items-center gap-7 text-sm font-semibold text-slate-600">
+            <a href="#platform" className="hover:text-slate-950 transition">Platform</a>
+            <a href="#workspaces" className="hover:text-slate-950 transition">Workspaces</a>
+            <a href="#trust" className="hover:text-slate-950 transition">Trust</a>
           </div>
-          <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-400">
-            <a href="#platform" className="hover:text-white transition">Platform</a>
-            <a href="#solutions" className="hover:text-white transition">Solutions</a>
-            <a href="#compliance" className="hover:text-white transition">Compliance</a>
-            <a href="#about" className="hover:text-white transition">About</a>
-          </div>
-          <button 
+
+          <button
             onClick={onGetStarted}
-            className="px-6 py-2.5 bg-white text-slate-950 font-bold rounded-full hover:bg-slate-200 transition shadow-lg shadow-white/10 active:scale-95"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition shadow-sm"
           >
             Access Portal
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <main className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-500/20 rounded-full blur-[120px] opacity-50 pointer-events-none" />
-        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/20 rounded-full blur-[100px] opacity-30 pointer-events-none" />
-        
-        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-brand-400 mb-8 backdrop-blur-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-            </span>
-            <span>LUMEN OS v2.0 is now live</span>
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl font-display font-extrabold tracking-tight mb-8 leading-[1.1]">
-            The Intelligence Layer for <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-500">
-              Rare Disease Diagnosis
-            </span>
-          </h1>
-          
-          <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed">
-            Accelerate the diagnostic odyssey from years to days. LUMEN connects genomic sequencing, clinical NLP, and global cohorts into a unified operating system for specialists, labs, and researchers.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button 
-              onClick={onGetStarted}
-              className="w-full sm:w-auto px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-full transition shadow-xl shadow-brand-500/25 flex items-center justify-center group active:scale-95"
-            >
-              Sign In to Workstation
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button 
-              onClick={() => document.getElementById('platform')?.scrollIntoView({ behavior: 'smooth' })}
-              className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-full border border-white/10 transition backdrop-blur-sm active:scale-95"
-            >
-              Learn More
-            </button>
-          </div>
-        </div>
+      <main>
+        <section className="relative min-h-[88svh] overflow-hidden bg-slate-950">
+          <img
+            src={heroCommand}
+            alt="Clinical genomics command center"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.82)_35%,rgba(15,23,42,0.34)_68%,rgba(15,23,42,0.08)_100%)]" />
 
-        {/* Dashboard Preview — styled mock instead of external image */}
-        <div className="mt-20 max-w-6xl mx-auto px-6 relative">
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 pointer-events-none" />
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md p-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
-            {/* Mock dashboard preview */}
-            <div className="grid grid-cols-4 gap-3 mb-4">
-              {['Active Cases', 'Urgent Cases', 'Avg. Resolution', 'Pending Reviews'].map((label, i) => (
-                <div key={i} className="bg-slate-800/70 rounded-xl p-3 border border-white/5">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold">{label}</p>
-                  <div className="h-4 w-12 bg-slate-700 rounded mt-2 animate-pulse" />
-                </div>
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[88svh] flex items-center">
+            <div className="max-w-2xl py-20">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-xs font-bold text-cyan-100 uppercase tracking-wide mb-6">
+                <LockKeyhole className="w-3.5 h-3.5" />
+                Rare Disease Diagnostic Intelligence
+              </div>
+
+              <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.02]">
+                LUMEN
+              </h1>
+              <p className="mt-6 text-xl sm:text-2xl font-semibold text-white max-w-xl">
+                A clinical operating system for faster rare disease diagnosis.
+              </p>
+              <p className="mt-5 text-base sm:text-lg text-slate-300 leading-8 max-w-xl">
+                Bring case review, genomic interpretation, research cohorts, and compliance monitoring into one secure workspace for care teams.
+              </p>
+
+              <div className="mt-9 flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={onGetStarted}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-sm font-extrabold rounded-lg transition shadow-lg shadow-cyan-950/30"
+                >
+                  Open Workstation
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <a
+                  href="#platform"
+                  className="inline-flex items-center justify-center px-6 py-3.5 bg-white/10 hover:bg-white/15 text-white text-sm font-bold rounded-lg border border-white/15 transition"
+                >
+                  Explore Platform
+                </a>
+              </div>
+
+              <div className="mt-10 grid grid-cols-3 gap-4 max-w-xl">
+                {METRICS.map((metric) => (
+                  <div key={metric.label} className="border-l border-white/20 pl-4">
+                    <div className="text-2xl font-display font-extrabold text-white">{metric.value}</div>
+                    <div className="mt-1 text-[11px] leading-4 font-semibold text-slate-400">{metric.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="platform" className="py-16 sm:py-20 bg-slate-50 border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-10 items-start">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-wide text-brand-600">Platform</p>
+                <h2 className="mt-3 font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">
+                  Built for repeated clinical work, not a one-off demo.
+                </h2>
+                <p className="mt-4 text-base leading-7 text-slate-600">
+                  LUMEN keeps the operational screens dense, readable, and role-specific so clinicians, lab teams, researchers, and administrators can move quickly without losing context.
+                </p>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-3">
+                {WORKSPACES.map((item) => (
+                  <div key={item.title} className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+                    <item.icon className="w-6 h-6 text-brand-600" />
+                    <h3 className="mt-4 text-sm font-extrabold text-slate-950">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="workspaces" className="py-16 sm:py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-brand-600">Workflow</p>
+                <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-slate-950">
+                  One connected diagnostic path.
+                </h2>
+              </div>
+              <div className="lg:col-span-2 grid sm:grid-cols-2 gap-4">
+                {[
+                  'Create a longitudinal patient case',
+                  'Map phenotype evidence from symptoms and notes',
+                  'Review genomic variants and confidence signals',
+                  'Publish reports, referrals, and audit-ready outcomes',
+                ].map((step) => (
+                  <div key={step} className="flex items-start gap-3 border border-slate-200 rounded-lg p-4 bg-slate-50">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold leading-6 text-slate-700">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="trust" className="py-12 bg-slate-950 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row gap-8 md:items-center md:justify-between">
+            <div>
+              <h2 className="font-display text-2xl font-extrabold tracking-tight">Designed for secure clinical operations.</h2>
+              <p className="mt-2 text-sm text-slate-400 max-w-2xl">
+                Role-based access, audit logging, and de-identified research workflows are built into the platform foundation.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { icon: ShieldCheck, label: 'HIPAA-ready' },
+                { icon: Database, label: 'FHIR-aware' },
+                { icon: LockKeyhole, label: 'SOC2 controls' },
+              ].map((item) => (
+                <span key={item.label} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-xs font-bold">
+                  <item.icon className="w-4 h-4 text-cyan-300" />
+                  {item.label}
+                </span>
               ))}
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-1 bg-slate-800/70 rounded-xl p-3 border border-white/5 space-y-2">
-                <p className="text-[10px] text-slate-500 uppercase font-bold">Patient Queue</p>
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-2">
-                    <div className="w-6 h-6 rounded-full bg-brand-500/20 border border-brand-500/30" />
-                    <div className="flex-1 h-2 bg-slate-700 rounded animate-pulse" />
-                  </div>
-                ))}
-              </div>
-              <div className="col-span-2 bg-slate-800/70 rounded-xl p-3 border border-white/5">
-                <p className="text-[10px] text-slate-500 uppercase font-bold mb-3">AI Differential Diagnosis</p>
-                {[85, 62, 41].map((pct, i) => (
-                  <div key={i} className="mb-2">
-                    <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-500/70 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
-        </div>
+        </section>
       </main>
-
-      {/* Features Section */}
-      <section id="platform" className="py-24 bg-slate-900/50 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-display font-bold mb-4">Unified Diagnostic Ecosystem</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">Seamlessly connecting every stakeholder in the rare disease journey through secure, AI-powered specialized workspaces.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { icon: Brain, title: 'AI Clinical Copilot', desc: 'NLP-powered HPO phenotyping directly from clinical notes to suggest differential diagnoses.', color: 'text-brand-400' },
-              { icon: Dna, title: 'Genomics Workstation', desc: 'Automated VCF ingestion, ACMG pathogenicity scoring, and variant prioritization.', color: 'text-purple-400' },
-              { icon: Globe, title: 'Federated Research', desc: 'Global de-identified cohort builder across compliant data nodes for discovery.', color: 'text-emerald-400' },
-              { icon: Activity, title: 'Clinician Dashboard', desc: 'Integrated longitudinal patient timeline and cross-specialist referral network.', color: 'text-pink-400' },
-              { icon: Database, title: 'Graph Database', desc: 'Neo4j knowledge graph linking gene-disease-phenotype relationships.', color: 'text-indigo-400' },
-              { icon: Shield, title: 'Enterprise Compliance', desc: 'Built-in SOC2, HIPAA, and GDPR compliance with granular audit logging.', color: 'text-slate-300' }
-            ].map((feat, idx) => (
-              <div key={idx} className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition group cursor-pointer">
-                <feat.icon className={`w-8 h-8 mb-4 ${feat.color}`} />
-                <h3 className="text-lg font-bold mb-2 group-hover:text-brand-400 transition">{feat.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{feat.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 border-t border-white/5 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center space-x-2">
-            <Activity className="w-5 h-5 text-brand-500" />
-            <span className="font-display font-bold text-lg tracking-tight text-white/90">LUMEN</span>
-          </div>
-          <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} LUMEN Intelligence Platform. All rights reserved.
-          </p>
-          <div className="flex space-x-6 text-sm text-slate-500">
-            <a href="#" className="hover:text-white transition">Privacy</a>
-            <a href="#" className="hover:text-white transition">Terms</a>
-            <a href="#" className="hover:text-white transition">System Status</a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

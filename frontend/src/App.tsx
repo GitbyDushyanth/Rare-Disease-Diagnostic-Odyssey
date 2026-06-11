@@ -9,12 +9,13 @@ import { AuthProvider, canAccessPortal, portalForRole, useAuth } from './context
 import { useAppData } from './hooks/useAppData';
 import {
   ShieldCheck,
-  Globe,
+  Globe2,
   Activity,
-  ChevronRight,
   Terminal,
   LogOut,
   Loader2,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react';
 
 type PortalId = 'clinician' | 'lab' | 'research' | 'admin';
@@ -22,12 +23,13 @@ type PortalId = 'clinician' | 'lab' | 'research' | 'admin';
 const PORTALS: Array<{
   id: PortalId;
   label: string;
+  shortLabel: string;
   icon: React.ElementType;
 }> = [
-  { id: 'clinician', label: 'Clinician Portal', icon: Activity },
-  { id: 'lab', label: 'Lab Workstation', icon: Terminal },
-  { id: 'research', label: 'Research Portal', icon: Globe },
-  { id: 'admin', label: 'Admin Portal', icon: ShieldCheck },
+  { id: 'clinician', label: 'Clinician Portal', shortLabel: 'Clinician', icon: Activity },
+  { id: 'lab', label: 'Lab Workstation', shortLabel: 'Lab', icon: Terminal },
+  { id: 'research', label: 'Research Portal', shortLabel: 'Research', icon: Globe2 },
+  { id: 'admin', label: 'Admin Portal', shortLabel: 'Admin', icon: ShieldCheck },
 ];
 
 const AppShell: React.FC = () => {
@@ -61,55 +63,65 @@ const AppShell: React.FC = () => {
     setActivePortal(portal);
   };
 
+  const workflowSteps = [
+    { label: 'Profile', done: state.patientProfile.isCompleted },
+    { label: 'Sequencing', done: state.genomicData.status === 'completed' },
+    { label: 'Report', done: state.genomicData.reportGenerated },
+    { label: 'Care plan', done: state.carePlanCreated },
+    { label: 'Referral', done: state.specialistReferred },
+  ];
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-100 font-sans">
-      <header className="bg-slate-900 text-white border-b border-slate-800 z-50 flex-shrink-0">
+      <header className="bg-white/95 text-slate-950 border-b border-slate-200 z-50 flex-shrink-0 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center font-display font-extrabold text-lg text-white shadow-lg border border-brand-500/30">
+          <div className="flex justify-between items-center gap-4 h-16">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-slate-950 rounded-lg flex items-center justify-center font-display font-extrabold text-lg text-white shadow-sm">
                 L
               </div>
-              <div>
-                <h1 className="font-display font-extrabold text-base tracking-tight leading-none text-white">
+              <div className="min-w-0">
+                <h1 className="font-display font-extrabold text-base tracking-tight leading-none text-slate-950">
                   LUMEN
                 </h1>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-bold uppercase tracking-wider">
+                <p className="text-[10px] text-slate-500 mt-0.5 font-bold uppercase tracking-wider truncate">
                   Connected Platform
                 </p>
               </div>
             </div>
 
-            <nav className="flex space-x-1.5 p-1 bg-slate-950 rounded-xl border border-slate-850">
-              {visiblePortals.map((portal) => (
-                <button
-                  key={portal.id}
-                  onClick={() => setActiveTabPortal(portal.id)}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition focus:outline-none ${
-                    currentPortal === portal.id
-                      ? 'bg-slate-800 text-white shadow border border-slate-700'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <portal.icon className="w-3.5 h-3.5" />
-                  <span>{portal.label}</span>
-                </button>
-              ))}
+            <nav className="flex-1 max-w-xl overflow-x-auto">
+              <div className="flex w-max sm:w-full justify-center gap-1 rounded-lg bg-slate-100 p-1 border border-slate-200">
+                {visiblePortals.map((portal) => (
+                  <button
+                    key={portal.id}
+                    onClick={() => setActiveTabPortal(portal.id)}
+                    className={`flex min-w-11 items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-extrabold transition focus:outline-none ${
+                      currentPortal === portal.id
+                        ? 'bg-white text-slate-950 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                    title={portal.label}
+                  >
+                    <portal.icon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{portal.shortLabel}</span>
+                  </button>
+                ))}
+              </div>
             </nav>
 
-            <div className="flex items-center space-x-4">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-slate-200">{user.fullName}</p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{user.role}</p>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="text-right hidden md:block">
+                <p className="text-xs font-extrabold text-slate-900">{user.fullName}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">{user.role}</p>
               </div>
-              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
               <button
                 onClick={() => logout()}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-extrabold text-slate-600 hover:text-slate-950 hover:bg-slate-100 transition"
                 title="Sign out"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Logout</span>
+                <LogOut className="w-4 h-4" />
+                <span className="hidden lg:inline">Logout</span>
               </button>
             </div>
           </div>
@@ -117,14 +129,14 @@ const AppShell: React.FC = () => {
       </header>
 
       {state.error && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-amber-800 text-xs font-medium text-center">
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-amber-800 text-xs font-bold text-center">
           API warning: {state.error}
         </div>
       )}
 
       <div className="flex-1 flex flex-col min-h-0 relative">
         {state.loading && (
-          <div className="absolute inset-0 bg-white/60 z-40 flex items-center justify-center">
+          <div className="absolute inset-0 bg-white/70 z-40 flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
           </div>
         )}
@@ -143,94 +155,38 @@ const AppShell: React.FC = () => {
         {currentPortal === 'admin' && <AdminPortal state={state} setState={setState} />}
       </div>
 
-      <footer className="bg-slate-900 border-t border-slate-800 text-white py-3 px-6 text-xs flex justify-between items-center flex-shrink-0 z-35 font-sans">
-        <div className="flex items-center space-x-2 text-[10px] uppercase font-bold text-slate-400">
-          <span>Continuous Learning Loop</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </div>
-
-        <div className="flex space-x-8 items-center text-[11px] font-semibold text-slate-400">
-          <div className="flex items-center space-x-1.5">
-            <span
-              className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                state.patientProfile.isCompleted
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-slate-800 text-slate-500 border border-slate-700'
-              }`}
-            >
-              {state.patientProfile.isCompleted ? '✓' : '1'}
-            </span>
-            <span className={state.patientProfile.isCompleted ? 'text-slate-200' : 'text-slate-500'}>
-              Patient Profile Created
-            </span>
+      <footer className="bg-white border-t border-slate-200 px-4 sm:px-6 py-2.5 flex-shrink-0 z-35 font-sans">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+          <div className="flex items-center gap-2 text-[10px] uppercase font-extrabold text-slate-500">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            Diagnostic workflow
           </div>
 
-          <div className="flex items-center space-x-1.5">
-            <span
-              className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                state.genomicData.status === 'completed'
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-slate-800 text-slate-500 border border-slate-700'
-              }`}
-            >
-              {state.genomicData.status === 'completed' ? '✓' : '2'}
-            </span>
-            <span
-              className={state.genomicData.status === 'completed' ? 'text-slate-200' : 'text-slate-500'}
-            >
-              VCF Sequenced & prioritized
-            </span>
+          <div className="flex gap-2 overflow-x-auto pb-0.5">
+            {workflowSteps.map((step, index) => {
+              const Icon = step.done ? CheckCircle2 : Circle;
+              return (
+                <div
+                  key={step.label}
+                  className={`flex items-center gap-1.5 shrink-0 rounded-lg border px-2.5 py-1.5 text-[11px] font-extrabold ${
+                    step.done
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border-slate-200 bg-slate-50 text-slate-500'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{index + 1}. {step.label}</span>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="flex items-center space-x-1.5">
-            <span
-              className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                state.genomicData.reportGenerated
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-slate-800 text-slate-500 border border-slate-700'
-              }`}
-            >
-              {state.genomicData.reportGenerated ? '✓' : '3'}
-            </span>
-            <span className={state.genomicData.reportGenerated ? 'text-slate-200' : 'text-slate-500'}>
-              Genomic report Signed
+          <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold">
+            <span>Active patient</span>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-slate-900">
+              {state.patientProfile.name || 'None'}
             </span>
           </div>
-
-          <div className="flex items-center space-x-1.5">
-            <span
-              className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                state.carePlanCreated
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-slate-800 text-slate-500 border border-slate-700'
-              }`}
-            >
-              {state.carePlanCreated ? '✓' : '4'}
-            </span>
-            <span className={state.carePlanCreated ? 'text-slate-200' : 'text-slate-500'}>
-              Clinician Care Plan Released
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-1.5">
-            <span
-              className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                state.specialistReferred
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-slate-800 text-slate-500 border border-slate-700'
-              }`}
-            >
-              {state.specialistReferred ? '✓' : '5'}
-            </span>
-            <span className={state.specialistReferred ? 'text-slate-200' : 'text-slate-500'}>
-              Specialist Referred
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-bold uppercase">
-          <span>Active Patient:</span>
-          <span className="text-brand-400 font-semibold">{state.patientProfile.name || 'None'}</span>
         </div>
       </footer>
     </div>
