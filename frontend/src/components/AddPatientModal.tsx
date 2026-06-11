@@ -50,7 +50,7 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({ onClose, onSuc
         country: form.country || undefined,
         gender: form.gender,
         dateOfBirth: form.dateOfBirth || undefined,
-      });
+      }, false);
 
       // 2. Open a new case for this patient
       // The backend auto-creates a patient record on register with role=patient

@@ -38,9 +38,11 @@ export async function register(data: {
   country?: string;
   gender?: string;
   dateOfBirth?: string;
-}): Promise<AuthUser> {
+}, autoLogin = true): Promise<AuthUser> {
   const res = await apiPost<ApiResponse<LoginResponse>>('/auth/register', data);
-  setTokens(res.data.accessToken, res.data.refreshToken);
+  if (autoLogin) {
+    setTokens(res.data.accessToken, res.data.refreshToken);
+  }
   return res.data.user;
 }
 
