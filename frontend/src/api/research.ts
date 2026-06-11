@@ -5,6 +5,7 @@ export interface ResearchDashboard {
   totalGenomes: number;
   totalTrials: number;
   countries: number;
+  phenotypesMapped: number;
   topHpoTerms: Array<{ name: string; count: number }>;
 }
 
@@ -17,6 +18,10 @@ export interface CohortResult {
   total: number;
   page: number;
   limit: number;
+  demographics?: {
+    age: Array<{ label: string; pct: number }>;
+    gender: Array<{ label: string; pct: number }>;
+  };
 }
 
 export async function getResearchDashboard(): Promise<ResearchDashboard> {

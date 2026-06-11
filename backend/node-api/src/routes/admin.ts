@@ -15,7 +15,7 @@ router.get('/dashboard', async (_req, res, next) => {
     const [
       totalPatients, totalClinicians, totalHospitals,
       totalCases, activeCases, totalGenomes,
-      recentAuditLogs, systemSettings,
+      recentAuditLogs, systemSettings, apiCallsPerMin,
     ] = await Promise.all([
       prisma.patient.count(),
       prisma.user.count({ where: { role: 'clinician' } }),
@@ -25,6 +25,7 @@ router.get('/dashboard', async (_req, res, next) => {
       prisma.genomicSample.count({ where: { status: 'completed' } }),
       prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 10 }),
       prisma.systemSetting.findMany({ where: { isPublic: true } }),
+      prisma.auditLog.count({ where: { createdAt: { gte: new Date(Date.now() - 60000) } } }),
     ]);
 
     const uptime = process.uptime();
@@ -40,6 +41,7 @@ router.get('/dashboard', async (_req, res, next) => {
           totalCases,
           activeCases,
           totalGenomes,
+          apiCallsPerMin,
           platformHealth: { uptime: uptimePct, uptimeSeconds: uptime },
         },
         recentAuditLogs,

@@ -95,7 +95,7 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState,
               timestamp: new Date().toLocaleTimeString(),
               action: 'Genomic Pipeline Complete',
               user: 'Bioinformatics Engine',
-              details: 'Analyzed 4.1 million variants in sample_SJ.vcf. Identified DMD c.5899dupC as top candidate.'
+              details: `Analyzed variants in ${s.genomicData.fileName}. Identified top candidates.`
             },
             ...s.auditLogs
           ]
@@ -203,7 +203,7 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState,
         {/* Workspace Title header */}
         <div className="flex justify-between items-center pb-5 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center space-x-4">
-            <h2 className="font-display font-extrabold text-2xl text-slate-100 tracking-tight">CASE-2024-1456</h2>
+            <h2 className="font-display font-extrabold text-2xl text-slate-100 tracking-tight">{patients.find(p => p.id === selectedCaseId)?.mrn || 'CASE-0000'}</h2>
             <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-bold uppercase">Completed</span>
           </div>
           <div className="flex items-center space-x-4">
@@ -232,7 +232,7 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState,
               onClick={handleStartAnalysis}
               className="px-6 py-2.5 bg-purple-600 hover:bg-purple-750 text-white font-bold rounded-lg text-xs shadow-md transition"
             >
-              Load sample_SJ.vcf file
+              Load {state.genomicData.fileName} file
             </button>
           </div>
         )}
@@ -258,7 +258,7 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState,
             </div>
             <div>
               <h3 className="font-display font-bold text-base">AI Variant Prioritization Engine Active</h3>
-              <p className="text-xs text-slate-400 mt-1">Cross-referencing 4.1 million coordinates with ACMG classifications & ClinVar database...</p>
+              <p className="text-xs text-slate-400 mt-1">Cross-referencing coordinates with ACMG classifications & ClinVar database...</p>
             </div>
           </div>
         )}
@@ -271,14 +271,14 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState,
               <div className="bg-lab-card border border-slate-850 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] text-slate-500 font-bold uppercase">Sample Code</p>
-                  <p className="text-sm font-bold text-slate-200 mt-0.5">sample_SJ.vcf (Trio)</p>
+                  <p className="text-sm font-bold text-slate-200 mt-0.5">{state.genomicData.fileName}</p>
                 </div>
                 <FileCode className="w-5 h-5 text-purple-400" />
               </div>
               <div className="bg-lab-card border border-slate-850 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] text-slate-500 font-bold uppercase">Variants Analyzed</p>
-                  <p className="text-sm font-bold text-slate-200 mt-0.5">4,124,859 coords</p>
+                  <p className="text-sm font-bold text-slate-200 mt-0.5">{state.genomicData.prioritizedVariants.length} priority candidates</p>
                 </div>
                 <Activity className="w-5 h-5 text-indigo-400" />
               </div>
@@ -452,11 +452,11 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState,
                       </div>
                       <div className="flex justify-between py-1.5 border-b border-slate-850">
                         <span className="text-slate-500">Protein Change</span>
-                        <span className="font-bold text-slate-200 font-mono">p.Arg234Ter</span>
+                        <span className="font-bold text-slate-200 font-mono">—</span>
                       </div>
                       <div className="flex justify-between py-1.5 border-b border-slate-850">
                         <span className="text-slate-500">Inheritance</span>
-                        <span className="font-bold text-slate-200">X-linked Recessive</span>
+                        <span className="font-bold text-slate-200">—</span>
                       </div>
                       <div className="flex justify-between py-1.5 border-b border-slate-850">
                         <span className="text-slate-500">ClinVar Verdict</span>

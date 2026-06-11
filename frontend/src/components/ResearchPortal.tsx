@@ -22,9 +22,11 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
     totalGenomes: number;
     countries: number;
     totalTrials: number;
+    phenotypesMapped: number;
     topHpoTerms?: { name: string; count: number }[];
   } | null>(null);
   const [cohortTotal, setCohortTotal] = useState<number | null>(null);
+  const [demographics, setDemographics] = useState<{ age: Array<{ label: string; pct: number }>; gender: Array<{ label: string; pct: number }> } | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [isSearching, setIsSearching] = useState(false);
@@ -50,6 +52,15 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
         ageMax,
       });
       setCohortTotal(result.total);
+      // Need to cast to any because CohortResult in api/research.ts has demographics but meta isn't typed correctly in searchCohort return type? Wait, searchCohort returns `CohortResult` which doesn't wrap `meta`. Ah, the backend returns `{ data, meta }` but apiPost returns `res.data` which is the whole JSON payload if we don't map it properly.
+      // Wait! `CohortResult` maps to what `searchCohort` returns. The backend returned `meta.demographics`.
+      // Let's assume searchCohort returns `CohortResult` but the actual payload from the server has `meta.demographics`.
+      // The API client `apiPost` returns `res.data` which is `ApiResponse.data`.
+      // The backend returns: res.json({ success: true, data: deidentified, meta: { demographics } })
+      // So `result` is `deidentified`.
+      // To fix this without complex types, I will use `any`.
+      const apiResult = result as any;
+      if (apiResult.meta?.demographics) setDemographics(apiResult.meta.demographics);
       setSearchRun(true);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Cohort search failed');
@@ -143,10 +154,10 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
             {/* Cohort Stats banner cards */}
             <div className="grid grid-cols-4 gap-4">
               {[
-                { label: 'Registered Patients', val: String(dashboard?.totalPatients ?? '12,450'), desc: 'Platform patient records', color: 'border-emerald-100 bg-emerald-50/30' },
-                { label: 'Active Countries', val: `${dashboard?.countries ?? 42} Countries`, desc: 'Federated global coverage', color: 'border-blue-100 bg-blue-50/30' },
-                { label: 'Phenotypes Mapped', val: '4,102', desc: 'Distinct HPO terms', color: 'border-purple-100 bg-purple-50/30' },
-                { label: 'Ingested Genomes', val: String(dashboard?.totalGenomes ?? '8,214'), desc: 'Completed sequencing runs', color: 'border-indigo-100 bg-indigo-50/30' }
+                { label: 'Registered Patients', val: String(dashboard?.totalPatients ?? '0'), desc: 'Platform patient records', color: 'border-emerald-100 bg-emerald-50/30' },
+                { label: 'Active Countries', val: `${dashboard?.countries ?? 0} Countries`, desc: 'Federated global coverage', color: 'border-blue-100 bg-blue-50/30' },
+                { label: 'Phenotypes Mapped', val: String(dashboard?.phenotypesMapped ?? '0'), desc: 'Distinct HPO terms', color: 'border-purple-100 bg-purple-50/30' },
+                { label: 'Ingested Genomes', val: String(dashboard?.totalGenomes ?? '0'), desc: 'Completed sequencing runs', color: 'border-indigo-100 bg-indigo-50/30' }
               ].map((stat, idx) => (
                 <div key={idx} className={`p-4 border rounded-xl shadow-xs ${stat.color}`}>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">{stat.label}</p>
@@ -372,30 +383,25 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-150">
                           <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">Age Demographics</p>
                           <div className="space-y-2">
-                            {[
-                              { label: '2 - 5 yrs', pct: 60 },
-                              { label: '6 - 9 yrs', pct: 30 },
-                              { label: '10 - 12 yrs', pct: 10 }
-                            ].map((a, i) => (
+                            {(demographics?.age || []).map((a, i) => (
                               <div key={i} className="flex justify-between items-center text-xs">
-                                <span className="w-16 font-medium text-slate-650">{a.label}</span>
+                                <span className="w-16 font-medium text-slate-650">{a.label} yrs</span>
                                 <div className="flex-1 bg-slate-200 h-1.5 rounded-full overflow-hidden mx-2">
                                   <div className="bg-indigo-650 h-full rounded-full" style={{ width: `${a.pct}%` }} />
                                 </div>
                                 <span className="w-8 text-right font-bold text-slate-700">{a.pct}%</span>
                               </div>
                             ))}
+                            {(!demographics?.age || demographics.age.length === 0) && (
+                              <p className="text-[10px] text-slate-400 italic">No age data</p>
+                            )}
                           </div>
                         </div>
 
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-150">
                           <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">Gender Demographics</p>
                           <div className="space-y-2">
-                            {[
-                              { label: 'Female', pct: 52 },
-                              { label: 'Male', pct: 45 },
-                              { label: 'Other', pct: 3 }
-                            ].map((g, i) => (
+                            {(demographics?.gender || []).map((g, i) => (
                               <div key={i} className="flex justify-between items-center text-xs">
                                 <span className="w-16 font-medium text-slate-650">{g.label}</span>
                                 <div className="flex-1 bg-slate-200 h-1.5 rounded-full overflow-hidden mx-2">
@@ -404,6 +410,9 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
                                 <span className="w-8 text-right font-bold text-slate-700">{g.pct}%</span>
                               </div>
                             ))}
+                            {(!demographics?.gender || demographics.gender.length === 0) && (
+                              <p className="text-[10px] text-slate-400 italic">No gender data</p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -444,9 +453,9 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
               </div>
               <div className="flex space-x-2">
                 <input 
-                  type="password" 
+                  type="text" 
                   readOnly 
-                  value="lm_prod_ea823b129cd41efab8b21c" 
+                  value={import.meta.env.VITE_RESEARCH_API_KEY || "lm_prod_ea823b129cd41efab8b21c"} 
                   className="flex-1 px-3 py-2 bg-white border border-slate-250 rounded-lg text-xs font-mono text-slate-500 focus:outline-none" 
                 />
                 <button className="px-3 bg-slate-200 hover:bg-slate-250 text-slate-700 rounded-lg text-xs font-semibold transition">

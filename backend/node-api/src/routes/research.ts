@@ -42,6 +42,7 @@ router.get('/dashboard', async (_req, res, next) => {
         totalGenomes,
         totalTrials,
         countries: countries.size,
+        phenotypesMapped: hpoMap.size,
         topHpoTerms: Array.from(hpoMap.entries())
           .sort((a, b) => b[1] - a[1])
           .slice(0, 10)
@@ -128,6 +129,7 @@ router.post('/cohort', validateBody(CohortSchema), async (req, res, next) => {
           mrn: true,
           dateOfBirth: true,
           lifeStatus: true,
+          user: { select: { gender: true } },
           conditions: { select: { name: true, icdCode: true } },
           _count: { select: { symptomEntries: true, genomicSamples: true } },
         },
@@ -145,10 +147,43 @@ router.post('/cohort', validateBody(CohortSchema), async (req, res, next) => {
       symptomCount: p._count.symptomEntries,
     }));
 
+    // Calculate demographics
+    const ageMap = new Map<string, number>();
+    const genderMap = new Map<string, number>();
+    
+    patients.forEach(p => {
+      const group = getAgeGroup(p.dateOfBirth);
+      ageMap.set(group, (ageMap.get(group) || 0) + 1);
+      
+      const gender = p.user?.gender || 'Unknown';
+      genderMap.set(gender, (genderMap.get(gender) || 0) + 1);
+    });
+
+    const totalCount = patients.length || 1; // avoid division by zero
+    
+    const ageDemographics = Array.from(ageMap.entries()).map(([label, count]) => ({
+      label,
+      pct: Math.round((count / totalCount) * 100)
+    }));
+
+    const genderDemographics = Array.from(genderMap.entries()).map(([label, count]) => ({
+      label,
+      pct: Math.round((count / totalCount) * 100)
+    }));
+
     res.json({
       success: true,
       data: deidentified,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      meta: { 
+        total, 
+        page, 
+        limit, 
+        totalPages: Math.ceil(total / limit),
+        demographics: {
+          age: ageDemographics,
+          gender: genderDemographics
+        }
+      },
     });
   } catch (err) {
     next(err);
