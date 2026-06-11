@@ -28,6 +28,11 @@ export interface CaseRecord {
     id: string;
     dateOfBirth: string;
     user: { fullName: string; email: string; gender?: string };
+    conditions?: Array<{
+      id: string;
+      name: string;
+      icdCode?: string;
+    }>;
     diagnosticSuggestions?: Array<{
       diseaseName: string;
       confidenceScore: number;
