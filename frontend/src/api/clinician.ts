@@ -88,6 +88,17 @@ export async function createCase(data: {
   description?: string;
   priority?: 'routine' | 'urgent' | 'emergency';
 }): Promise<CaseRecord> {
-  const res = await apiPost<ApiResponse<CaseRecord>>('/clinician/cases', data);
+  const priorityMap: Record<string, string> = {
+    routine: 'medium',
+    urgent: 'high',
+    emergency: 'urgent',
+  };
+
+  const payload = {
+    ...data,
+    priority: data.priority ? priorityMap[data.priority] : 'medium',
+  };
+
+  const res = await apiPost<ApiResponse<CaseRecord>>('/clinician/cases', payload);
   return res.data;
 }
