@@ -17,11 +17,23 @@ interface LabWorkstationProps {
   patientId?: string;
 }
 
+type LabTab = 'variants' | 'phenotype' | 'reports' | 'files';
+type VariantSubTab = 'overview' | 'evidence' | 'population' | 'literature' | 'notes';
+
+const LAB_TABS: Array<{ id: LabTab; label: string; icon: React.ElementType }> = [
+  { id: 'variants', label: 'Variants', icon: List },
+  { id: 'phenotype', label: 'Phenotype', icon: Activity },
+  { id: 'reports', label: 'Reports', icon: FileText },
+  { id: 'files', label: 'Files', icon: FileStack },
+];
+
+const VARIANT_SUB_TABS: VariantSubTab[] = ['overview', 'evidence', 'population', 'literature', 'notes'];
+
 export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState, patientId }) => {
   const [selectedCaseId, setSelectedCaseId] = useState('');
   const [patients, setPatients] = useState<PatientRecord[]>([]);
-  const [activeTab, setActiveTab] = useState<'variants' | 'phenotype' | 'reports' | 'files'>('variants');
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'evidence' | 'population' | 'literature' | 'notes'>('overview');
+  const [activeTab, setActiveTab] = useState<LabTab>('variants');
+  const [activeSubTab, setActiveSubTab] = useState<VariantSubTab>('overview');
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
 
   // Handle uploading and parsing process animation
@@ -298,15 +310,10 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState,
               <div className="col-span-7 bg-lab-card border border-slate-850 rounded-xl flex flex-col min-h-0">
                 <div className="border-b border-slate-800 px-4 flex justify-between items-center flex-shrink-0">
                   <div className="flex space-x-4 text-xs font-bold text-slate-400">
-                    {[
-                      { id: 'variants', label: 'Variants', icon: List },
-                      { id: 'phenotype', label: 'Phenotype', icon: Activity },
-                      { id: 'reports', label: 'Reports', icon: FileText },
-                      { id: 'files', label: 'Files', icon: FileStack }
-                    ].map(tab => (
+                    {LAB_TABS.map(tab => (
                       <button 
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
+                        onClick={() => setActiveTab(tab.id)}
                         className={`py-3.5 border-b-2 transition flex items-center space-x-1.5 ${
                           activeTab === tab.id 
                             ? 'border-purple-500 text-purple-200 font-extrabold' 
@@ -431,10 +438,10 @@ export const LabWorkstation: React.FC<LabWorkstationProps> = ({ state, setState,
                   </div>
 
                   <div className="flex space-x-4 border-b border-slate-800 pb-2">
-                    {['overview', 'evidence', 'population', 'literature', 'notes'].map((tab) => (
+                    {VARIANT_SUB_TABS.map((tab) => (
                       <button 
                         key={tab}
-                        onClick={() => setActiveSubTab(tab as any)}
+                        onClick={() => setActiveSubTab(tab)}
                         className={`text-[10px] font-bold uppercase tracking-wider transition ${
                           activeSubTab === tab ? 'text-purple-400 border-b border-purple-400 pb-2 -mb-2' : 'text-slate-500 hover:text-slate-300'
                         }`}

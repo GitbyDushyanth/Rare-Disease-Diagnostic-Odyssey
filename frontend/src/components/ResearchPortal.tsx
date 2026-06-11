@@ -3,7 +3,13 @@ import {
   Globe, Database, Key, Search, Compass, ArrowDownToLine, Filter, UserCheck, CheckCircle2, Loader2, BookOpen, LineChart, Target, X
 } from 'lucide-react';
 import type { SharedState } from '../types';
-import { getResearchDashboard, searchCohort, exportDataset } from '../api/research';
+import {
+  getResearchDashboard,
+  searchCohort,
+  exportDataset,
+  type CohortDemographics,
+  type ResearchDashboard,
+} from '../api/research';
 import { ApiError } from '../api/client';
 
 interface ResearchPortalProps {
@@ -11,22 +17,26 @@ interface ResearchPortalProps {
   setState: React.Dispatch<React.SetStateAction<SharedState>>;
 }
 
+type ResearchTab = 'overview' | 'cohort' | 'analysis' | 'datasets' | 'publications' | 'api';
+
+const RESEARCH_NAV_ITEMS: Array<{ id: ResearchTab; label: string; icon: React.ElementType }> = [
+  { id: 'overview', label: 'Ecosystem Overview', icon: Globe },
+  { id: 'cohort', label: 'Cohort Query Builder', icon: Database },
+  { id: 'analysis', label: 'Analysis Workspaces', icon: LineChart },
+  { id: 'datasets', label: 'Federated Datasets', icon: Target },
+  { id: 'publications', label: 'Publications', icon: BookOpen },
+  { id: 'api', label: 'API Access', icon: Key },
+];
+
 export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'cohort' | 'analysis' | 'datasets' | 'publications' | 'api'>('overview');
+  const [activeTab, setActiveTab] = useState<ResearchTab>('overview');
   const [geneQuery, setGeneQuery] = useState('');
   const [symptomQuery, setSymptomQuery] = useState('');
   const [ageMin, setAgeMin] = useState(0);
   const [ageMax, setAgeMax] = useState(100);
-  const [dashboard, setDashboard] = useState<{
-    totalPatients: number;
-    totalGenomes: number;
-    countries: number;
-    totalTrials: number;
-    phenotypesMapped: number;
-    topHpoTerms?: { name: string; count: number }[];
-  } | null>(null);
+  const [dashboard, setDashboard] = useState<ResearchDashboard | null>(null);
   const [cohortTotal, setCohortTotal] = useState<number | null>(null);
-  const [demographics, setDemographics] = useState<{ age: Array<{ label: string; pct: number }>; gender: Array<{ label: string; pct: number }> } | null>(null);
+  const [demographics, setDemographics] = useState<CohortDemographics | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [isSearching, setIsSearching] = useState(false);
@@ -52,9 +62,7 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
         ageMax,
       });
       setCohortTotal(result.total);
-      // The backend returns demographics in the `meta` field of the response
-      const apiResult = result as any;
-      if (apiResult.meta?.demographics) setDemographics(apiResult.meta.demographics);
+      setDemographics(result.demographics ?? null);
       setSearchRun(true);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Cohort search failed');
@@ -106,17 +114,10 @@ export const ResearchPortal: React.FC<ResearchPortalProps> = () => {
           </div>
 
           <nav className="space-y-1">
-            {[
-              { id: 'overview', label: 'Ecosystem Overview', icon: Globe },
-              { id: 'cohort', label: 'Cohort Query Builder', icon: Database },
-              { id: 'analysis', label: 'Analysis Workspaces', icon: LineChart },
-              { id: 'datasets', label: 'Federated Datasets', icon: Target },
-              { id: 'publications', label: 'Publications', icon: BookOpen },
-              { id: 'api', label: 'API Access', icon: Key }
-            ].map(item => (
+            {RESEARCH_NAV_ITEMS.map(item => (
               <button 
                 key={item.id}
-                onClick={() => setActiveTab(item.id as any)}
+                onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === item.id 
                     ? 'bg-indigo-50 text-indigo-700 shadow-xs border border-indigo-100' 

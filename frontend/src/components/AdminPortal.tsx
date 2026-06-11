@@ -12,8 +12,26 @@ interface AdminPortalProps {
   setState: React.Dispatch<React.SetStateAction<SharedState>>;
 }
 
+type AdminTab = 'overview' | 'users' | 'roles' | 'audit' | 'billing' | 'quality';
+
+const ADMIN_NAV_ITEMS: Array<{ id: AdminTab; label: string; icon: React.ElementType }> = [
+  { id: 'overview', label: 'Platform Overview', icon: Server },
+  { id: 'users', label: 'Users', icon: Users },
+  { id: 'roles', label: 'Roles & Permissions', icon: Key },
+  { id: 'audit', label: 'Audit Logs', icon: ClipboardList },
+  { id: 'billing', label: 'Billing', icon: CreditCard },
+  { id: 'quality', label: 'Data Quality Engine', icon: Database },
+];
+
+const TRAFFIC_BAR_HEIGHTS = [
+  26, 42, 31, 58, 47, 73, 66, 38, 84, 52,
+  44, 69, 91, 61, 36, 57, 78, 49, 88, 64,
+  35, 53, 72, 46, 82, 59, 39, 67, 94, 55,
+  43, 75, 62, 33, 81, 50, 68, 87, 45, 70,
+];
+
 export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles' | 'audit' | 'billing' | 'quality'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [auditSearch, setAuditSearch] = useState('');
   const [stats, setStats] = useState<{
     totalPatients: number;
@@ -84,17 +102,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
           </div>
 
           <nav className="space-y-1">
-            {[
-              { id: 'overview', label: 'Platform Overview', icon: Server },
-              { id: 'users', label: 'Users', icon: Users },
-              { id: 'roles', label: 'Roles & Permissions', icon: Key },
-              { id: 'audit', label: 'Audit Logs', icon: ClipboardList },
-              { id: 'billing', label: 'Billing', icon: CreditCard },
-              { id: 'quality', label: 'Data Quality Engine', icon: Database }
-            ].map(item => (
+            {ADMIN_NAV_ITEMS.map(item => (
               <button 
                 key={item.id}
-                onClick={() => setActiveTab(item.id as any)}
+                onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === item.id 
                     ? 'bg-pink-50 text-pink-700 shadow-xs border border-pink-100' 
@@ -203,11 +214,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ state, setState }) => 
                     Global Network Traffic
                   </h3>
                   <div className="h-24 bg-slate-50 border border-slate-150 rounded-lg flex items-end px-2 py-1 space-x-1">
-                    {Array.from({ length: 40 }).map((_, i) => (
+                    {TRAFFIC_BAR_HEIGHTS.map((height, i) => (
                       <div 
                         key={i} 
                         className="w-full bg-pink-500/20 rounded-t-sm" 
-                        style={{ height: `${Math.max(10, Math.random() * 100)}%` }} 
+                        style={{ height: `${height}%` }} 
                       />
                     ))}
                   </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ClinicianPortal } from './components/ClinicianPortal';
 import { LabWorkstation } from './components/LabWorkstation';
 import { ResearchPortal } from './components/ResearchPortal';
@@ -36,14 +36,6 @@ const AppShell: React.FC = () => {
   const [activePortal, setActivePortal] = useState<PortalId>('clinician');
   const [showLogin, setShowLogin] = useState(false);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (user) {
-      const portal = portalForRole(user.role);
-      setActivePortal(portal === 'patient' ? 'clinician' : portal);
-    }
-  }, [user]);
-
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -60,6 +52,9 @@ const AppShell: React.FC = () => {
   }
 
   const visiblePortals = PORTALS.filter((p) => canAccessPortal(user.role, p.id));
+  const rolePortal = portalForRole(user.role);
+  const fallbackPortal = rolePortal === 'patient' ? 'clinician' : rolePortal;
+  const currentPortal = canAccessPortal(user.role, activePortal) ? activePortal : fallbackPortal;
 
   const setActiveTabPortal = (portal: PortalId) => {
     if (!canAccessPortal(user.role, portal)) return;
@@ -91,7 +86,7 @@ const AppShell: React.FC = () => {
                   key={portal.id}
                   onClick={() => setActiveTabPortal(portal.id)}
                   className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition focus:outline-none ${
-                    activePortal === portal.id
+                    currentPortal === portal.id
                       ? 'bg-slate-800 text-white shadow border border-slate-700'
                       : 'text-slate-400 hover:text-white'
                   }`}
@@ -134,18 +129,18 @@ const AppShell: React.FC = () => {
           </div>
         )}
 
-        {activePortal === 'clinician' && (
+        {currentPortal === 'clinician' && (
           <ClinicianPortal
             state={state}
             setState={setState}
             onCaseSelect={syncPatientFromCase}
           />
         )}
-        {activePortal === 'lab' && (
+        {currentPortal === 'lab' && (
           <LabWorkstation state={state} setState={setState} patientId={state.patientId} />
         )}
-        {activePortal === 'research' && <ResearchPortal state={state} setState={setState} />}
-        {activePortal === 'admin' && <AdminPortal state={state} setState={setState} />}
+        {currentPortal === 'research' && <ResearchPortal state={state} setState={setState} />}
+        {currentPortal === 'admin' && <AdminPortal state={state} setState={setState} />}
       </div>
 
       <footer className="bg-slate-900 border-t border-slate-800 text-white py-3 px-6 text-xs flex justify-between items-center flex-shrink-0 z-35 font-sans">
